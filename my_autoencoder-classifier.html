@@ -11772,7 +11772,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># These are all the modules we&#39;ll be using later. Make sure you can import them</span>
@@ -11805,7 +11805,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">data_set</span> <span class="o">=</span> <span class="n">input_data</span><span class="o">.</span><span class="n">read_data_sets</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
@@ -11847,7 +11847,7 @@ Extracting t10k-labels-idx1-ubyte.gz
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">images_feed</span><span class="p">,</span> <span class="n">labels_feed</span> <span class="o">=</span> <span class="n">training_data</span><span class="o">.</span><span class="n">next_batch</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span><span class="bp">False</span><span class="p">)</span>
@@ -11864,7 +11864,7 @@ Extracting t10k-labels-idx1-ubyte.gz
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[10]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[3]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -11873,19 +11873,6 @@ Extracting t10k-labels-idx1-ubyte.gz
 
 </div>
 
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span></span><span class="n">training_data</span><span class="o">.</span>
-</pre></div>
-
-</div>
 </div>
 </div>
 
@@ -11905,7 +11892,7 @@ Extracting t10k-labels-idx1-ubyte.gz
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">validation_data</span><span class="o">=</span><span class="n">data_set</span><span class="o">.</span><span class="n">validation</span>
@@ -11919,7 +11906,7 @@ Extracting t10k-labels-idx1-ubyte.gz
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">batch_size</span> <span class="o">=</span> <span class="mi">128</span>
@@ -11968,14 +11955,21 @@ Extracting t10k-labels-idx1-ubyte.gz
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span></span><span class="n">num_steps</span> <span class="o">=</span> <span class="mi">10000</span>
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">num_steps</span> <span class="o">=</span> <span class="mi">100000</span>
 
 <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">graph</span><span class="o">=</span><span class="n">graph</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
   <span class="n">tf</span><span class="o">.</span><span class="n">initialize_all_variables</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
   <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Initialized&quot;</span><span class="p">)</span>
+  <span class="n">batch_data</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">training_data</span><span class="o">.</span><span class="n">next_batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+  <span class="c1"># Prepare a dictionary telling the session where to feed the minibatch.</span>
+  <span class="c1"># The key of the dictionary is the placeholder node of the graph to be fed,</span>
+  <span class="c1"># and the value is the numpy array to feed to it.</span>
+  <span class="n">feed_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">tf_train_dataset</span> <span class="p">:</span> <span class="n">batch_data</span><span class="p">}</span>
+  <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">valid_loss</span><span class="p">,</span> <span class="n">valid_output_units</span><span class="p">],</span> <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
+  <span class="n">prev_v_l</span> <span class="o">=</span> <span class="n">v_l</span>
   <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_steps</span><span class="p">):</span>
     <span class="c1"># Pick an offset within the training data, which has been randomized.</span>
     <span class="c1"># Note: we could use better randomization across epochs.</span>
@@ -11990,6 +11984,8 @@ Extracting t10k-labels-idx1-ubyte.gz
     <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">500</span>==0:
         <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">valid_loss</span><span class="p">,</span><span class="n">valid_output_units</span><span class="p">],</span> <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
         <span class="k">print</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span><span class="s2">&quot; </span><span class="se">\t</span><span class="s2">Train loss &quot;</span><span class="p">,</span><span class="n">l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Valid loss&quot;</span><span class="p">,</span><span class="n">v_l</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">prev_v_l</span> <span class="o">&lt;</span> <span class="n">v_l</span><span class="p">:</span>
+            <span class="k">break</span>
         
 <span class="c1"># for i in xrange(batch_size):</span>
     <span class="c1">#        plt.imshow(features[i].reshape(image_size,image_size), cmap=cm.gray)</span>
@@ -12006,26 +12002,8 @@ Extracting t10k-labels-idx1-ubyte.gz
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>Initialized
-step 0  	Train loss  90.3229 	Valid loss 3510.55
-step 500  	Train loss  28.6283 	Valid loss 1089.39
-step 1000  	Train loss  27.7231 	Valid loss 1054.03
-step 1500  	Train loss  26.9862 	Valid loss 1044.37
-step 2000  	Train loss  27.384 	Valid loss 1040.28
-step 2500  	Train loss  26.3943 	Valid loss 1037.33
-step 3000  	Train loss  26.7192 	Valid loss 1036.09
-step 3500  	Train loss  26.8447 	Valid loss 1035.55
-step 4000  	Train loss  27.2941 	Valid loss 1034.7
-step 4500  	Train loss  26.1163 	Valid loss 1034.24
-step 5000  	Train loss  27.4123 	Valid loss 1034.05
-step 5500  	Train loss  26.7467 	Valid loss 1033.37
-step 6000  	Train loss  26.6219 	Valid loss 1031.67
-step 6500  	Train loss  27.2009 	Valid loss 1031.16
-step 7000  	Train loss  26.6774 	Valid loss 1030.56
-step 7500  	Train loss  26.3063 	Valid loss 1029.75
-step 8000  	Train loss  26.6988 	Valid loss 1028.77
-step 8500  	Train loss  27.4254 	Valid loss 1027.75
-step 9000  	Train loss  26.5698 	Valid loss 1026.66
-step 9500  	Train loss  26.021 	Valid loss 1025.53
+step 0  	Train loss  89.6932 	Valid loss 3503.7
+step 500  	Train loss  27.8539 	Valid loss 1089.06
 </pre>
 </div>
 </div>

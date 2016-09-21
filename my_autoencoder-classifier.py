@@ -16,7 +16,7 @@
 
 
 
-# In[8]:
+# In[1]:
 
 # These are all the modules we'll be using later. Make sure you can import them
 # before proceeding further.
@@ -33,7 +33,7 @@ get_ipython().magic(u'matplotlib inline')
 
 # First we load the MNIST data
 
-# In[9]:
+# In[2]:
 
 data_set = input_data.read_data_sets('', False)
 training_data=data_set.train
@@ -42,7 +42,7 @@ testing_data=data_set.test
 
 # Checking  the data
 
-# In[10]:
+# In[3]:
 
 images_feed, labels_feed = training_data.next_batch(10000,False)
 image_size = 28
@@ -50,22 +50,17 @@ num_labels=10
 np.min(images_feed)
 
 
-# In[5]:
-
-training_data.
-
-
 # Do validation testing:
 # - data as a flat matrix,
 # 
 
-# In[11]:
+# In[5]:
 
 validation_data=data_set.validation
 valid_batch,validation_labels=validation_data.next_batch(validation_data.num_examples)
 
 
-# In[12]:
+# In[6]:
 
 batch_size = 128
 nHidden=196
@@ -106,13 +101,20 @@ with graph.as_default():
     #sigmoid output
 
 
-# In[13]:
+# In[ ]:
 
-num_steps = 10000
+num_steps = 100000
 
 with tf.Session(graph=graph) as session:
   tf.initialize_all_variables().run()
   print("Initialized")
+  batch_data,_ = training_data.next_batch(batch_size)
+  # Prepare a dictionary telling the session where to feed the minibatch.
+  # The key of the dictionary is the placeholder node of the graph to be fed,
+  # and the value is the numpy array to feed to it.
+  feed_dict = {tf_train_dataset : batch_data}
+  _, l, v_l, valid_out_data = session.run([optimizer, loss, valid_loss, valid_output_units], feed_dict=feed_dict)
+  prev_v_l = v_l
   for step in range(num_steps):
     # Pick an offset within the training data, which has been randomized.
     # Note: we could use better randomization across epochs.
@@ -127,6 +129,8 @@ with tf.Session(graph=graph) as session:
     if step%500==0:
         _, l, v_l, valid_out_data = session.run([optimizer, loss, valid_loss,valid_output_units], feed_dict=feed_dict)
         print("step", step," \tTrain loss ",l, "\tValid loss",v_l)
+        if prev_v_l < v_l:
+            break
         
 # for i in xrange(batch_size):
     #        plt.imshow(features[i].reshape(image_size,image_size), cmap=cm.gray)
