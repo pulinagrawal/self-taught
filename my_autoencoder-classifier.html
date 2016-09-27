@@ -11779,13 +11779,16 @@ div#notebook {
 <span class="c1"># before proceeding further.</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
 <span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="n">cPickle</span> <span class="k">as</span> <span class="n">pickle</span>
 <span class="kn">from</span> <span class="nn">tensorflow.contrib.learn.python.learn.datasets.mnist</span> <span class="kn">import</span> <span class="n">read_data_sets</span>
 <span class="kn">from</span> <span class="nn">tensorflow.examples.tutorials.mnist</span> <span class="kn">import</span> <span class="n">input_data</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">matplotlib.cm</span> <span class="kn">as</span> <span class="nn">cm</span>
-<span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;ipykernel&quot;</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="p">:</span>
+    <span class="o">%</span><span class="k">matplotlib</span> inline
 </pre></div>
 
 </div>
@@ -11955,7 +11958,7 @@ Extracting t10k-labels-idx1-ubyte.gz
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">num_steps</span> <span class="o">=</span> <span class="mi">100000</span>
@@ -12004,7 +12007,83 @@ Extracting t10k-labels-idx1-ubyte.gz
 <pre>Initialized
 step 0  	Train loss  89.6932 	Valid loss 3503.7
 step 500  	Train loss  27.8539 	Valid loss 1089.06
+step 1000  	Train loss  27.3733 	Valid loss 1054.01
+step 1500  	Train loss  27.3812 	Valid loss 1044.4
+step 2000  	Train loss  26.5418 	Valid loss 1040.26
+step 2500  	Train loss  27.1909 	Valid loss 1037.19
+step 3000  	Train loss  27.0758 	Valid loss 1036.12
+step 3500  	Train loss  25.7396 	Valid loss 1035.38
+step 4000  	Train loss  26.8484 	Valid loss 1034.76
+step 4500  	Train loss  27.2742 	Valid loss 1034.23
+step 5000  	Train loss  26.0977 	Valid loss 1033.69
+step 5500  	Train loss  27.6492 	Valid loss 1032.84
+step 6000  	Train loss  26.4161 	Valid loss 1030.38
+step 6500  	Train loss  25.814 	Valid loss 1028.89
+step 7000  	Train loss  25.4932 	Valid loss 1027.65
+step 7500  	Train loss  26.3702 	Valid loss 1026.47
+step 8000  	Train loss  27.6491 	Valid loss 1025.25
+step 8500  	Train loss  26.4227 	Valid loss 1023.95
+step 9000  	Train loss  24.7093 	Valid loss 1022.55
+step 9500  	Train loss  25.9198 	Valid loss 1020.73
+step 10000  	Train loss  26.3609 	Valid loss 1018.87
+step 10500  	Train loss  26.9574 	Valid loss 1016.3
+step 11000  	Train loss  25.3251 	Valid loss 1013.13
+step 11500  	Train loss  25.5267 	Valid loss 1010.28
+step 12000  	Train loss  24.6489 	Valid loss 1007.21
+step 12500  	Train loss  25.4854 	Valid loss 1003.92
+step 13000  	Train loss  25.8776 	Valid loss 1000.82
 </pre>
+</div>
+</div>
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_text output_error">
+<pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">KeyboardInterrupt</span>                         Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-10-ff4b91ff88c6&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">     21</span>     feed_dict <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">{</span>tf_train_dataset <span class="ansi-blue-fg">:</span> batch_data<span class="ansi-blue-fg">}</span>
+<span class="ansi-green-intense-fg ansi-bold">     22</span>     _, l, feature_weights, feature_biases= session.run(
+<span class="ansi-green-fg">---&gt; 23</span><span class="ansi-red-fg">       [optimizer, loss, weights_hidden1, biases_hidden1], feed_dict=feed_dict)
+</span><span class="ansi-green-intense-fg ansi-bold">     24</span>     <span class="ansi-green-fg">if</span> step<span class="ansi-blue-fg">%</span><span class="ansi-cyan-fg">500</span><span class="ansi-blue-fg">==</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">     25</span>         _<span class="ansi-blue-fg">,</span> l<span class="ansi-blue-fg">,</span> v_l<span class="ansi-blue-fg">,</span> valid_out_data <span class="ansi-blue-fg">=</span> session<span class="ansi-blue-fg">.</span>run<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">[</span>optimizer<span class="ansi-blue-fg">,</span> loss<span class="ansi-blue-fg">,</span> valid_loss<span class="ansi-blue-fg">,</span>valid_output_units<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> feed_dict<span class="ansi-blue-fg">=</span>feed_dict<span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.pyc</span> in <span class="ansi-cyan-fg">run</span><span class="ansi-blue-fg">(self, fetches, feed_dict, options, run_metadata)</span>
+<span class="ansi-green-intense-fg ansi-bold">    370</span>     <span class="ansi-green-fg">try</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    371</span>       result = self._run(None, fetches, feed_dict, options_ptr,
+<span class="ansi-green-fg">--&gt; 372</span><span class="ansi-red-fg">                          run_metadata_ptr)
+</span><span class="ansi-green-intense-fg ansi-bold">    373</span>       <span class="ansi-green-fg">if</span> run_metadata<span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    374</span>         proto_data <span class="ansi-blue-fg">=</span> tf_session<span class="ansi-blue-fg">.</span>TF_GetBuffer<span class="ansi-blue-fg">(</span>run_metadata_ptr<span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.pyc</span> in <span class="ansi-cyan-fg">_run</span><span class="ansi-blue-fg">(self, handle, fetches, feed_dict, options, run_metadata)</span>
+<span class="ansi-green-intense-fg ansi-bold">    634</span>     <span class="ansi-green-fg">try</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    635</span>       results = self._do_run(handle, target_list, unique_fetches,
+<span class="ansi-green-fg">--&gt; 636</span><span class="ansi-red-fg">                              feed_dict_string, options, run_metadata)
+</span><span class="ansi-green-intense-fg ansi-bold">    637</span>     <span class="ansi-green-fg">finally</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    638</span>       <span class="ansi-red-fg"># The movers are no longer used. Delete them.</span>
+
+<span class="ansi-green-fg">/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.pyc</span> in <span class="ansi-cyan-fg">_do_run</span><span class="ansi-blue-fg">(self, handle, target_list, fetch_list, feed_dict, options, run_metadata)</span>
+<span class="ansi-green-intense-fg ansi-bold">    706</span>     <span class="ansi-green-fg">if</span> handle <span class="ansi-green-fg">is</span> None<span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    707</span>       return self._do_call(_run_fn, self._session, feed_dict, fetch_list,
+<span class="ansi-green-fg">--&gt; 708</span><span class="ansi-red-fg">                            target_list, options, run_metadata)
+</span><span class="ansi-green-intense-fg ansi-bold">    709</span>     <span class="ansi-green-fg">else</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    710</span>       return self._do_call(_prun_fn, self._session, handle, feed_dict,
+
+<span class="ansi-green-fg">/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.pyc</span> in <span class="ansi-cyan-fg">_do_call</span><span class="ansi-blue-fg">(self, fn, *args)</span>
+<span class="ansi-green-intense-fg ansi-bold">    713</span>   <span class="ansi-green-fg">def</span> _do_call<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> fn<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    714</span>     <span class="ansi-green-fg">try</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-fg">--&gt; 715</span><span class="ansi-red-fg">       </span><span class="ansi-green-fg">return</span> fn<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    716</span>     <span class="ansi-green-fg">except</span> errors<span class="ansi-blue-fg">.</span>OpError <span class="ansi-green-fg">as</span> e<span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    717</span>       message <span class="ansi-blue-fg">=</span> compat<span class="ansi-blue-fg">.</span>as_text<span class="ansi-blue-fg">(</span>e<span class="ansi-blue-fg">.</span>message<span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.pyc</span> in <span class="ansi-cyan-fg">_run_fn</span><span class="ansi-blue-fg">(session, feed_dict, fetch_list, target_list, options, run_metadata)</span>
+<span class="ansi-green-intense-fg ansi-bold">    695</span>         return tf_session.TF_Run(session, options,
+<span class="ansi-green-intense-fg ansi-bold">    696</span>                                  feed_dict<span class="ansi-blue-fg">,</span> fetch_list<span class="ansi-blue-fg">,</span> target_list<span class="ansi-blue-fg">,</span>
+<span class="ansi-green-fg">--&gt; 697</span><span class="ansi-red-fg">                                  status, run_metadata)
+</span><span class="ansi-green-intense-fg ansi-bold">    698</span> 
+<span class="ansi-green-intense-fg ansi-bold">    699</span>     <span class="ansi-green-fg">def</span> _prun_fn<span class="ansi-blue-fg">(</span>session<span class="ansi-blue-fg">,</span> handle<span class="ansi-blue-fg">,</span> feed_dict<span class="ansi-blue-fg">,</span> fetch_list<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+
+<span class="ansi-red-fg">KeyboardInterrupt</span>: </pre>
 </div>
 </div>
 

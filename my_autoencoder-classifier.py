@@ -22,13 +22,16 @@
 # before proceeding further.
 from __future__ import print_function
 import numpy as np
+import re
+import sys
 import tensorflow as tf
 from six.moves import cPickle as pickle
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.examples.tutorials.mnist import input_data
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-get_ipython().magic(u'matplotlib inline')
+if re.search("ipykernel", sys.argv[0]) :
+    get_ipython().magic(u'matplotlib inline')
 
 
 # First we load the MNIST data
@@ -101,7 +104,7 @@ with graph.as_default():
     #sigmoid output
 
 
-# In[ ]:
+# In[10]:
 
 num_steps = 100000
 
