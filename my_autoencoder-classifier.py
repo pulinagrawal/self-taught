@@ -11,11 +11,6 @@
 # 
 # The goal of this assignment is to train a sparse autoencoder network on MNIST Data and visulize its validation data reconstruction.
 
-# In[ ]:
-
-
-
-
 # In[1]:
 
 # These are all the modules we'll be using later. Make sure you can import them
@@ -31,6 +26,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 if re.search("ipykernel", sys.argv[0]) :
+    print("Matplotlib is inline")
     get_ipython().magic(u'matplotlib inline')
 
 
@@ -57,13 +53,13 @@ np.min(images_feed)
 # - data as a flat matrix,
 # 
 
-# In[5]:
+# In[4]:
 
 validation_data=data_set.validation
 valid_batch,validation_labels=validation_data.next_batch(validation_data.num_examples)
 
 
-# In[6]:
+# In[9]:
 
 batch_size = 128
 nHidden=196
@@ -83,28 +79,28 @@ with graph.as_default():
    
   # Variables.
   weights_hidden1 = tf.Variable(tf.truncated_normal([image_size * image_size, nHidden],stddev=0.01))
-  weights = tf.Variable(tf.truncated_normal([nHidden, image_size*image_size],stddev=0.01))
+  #weights = tf.Variable(tf.truncated_normal([nHidden, image_size*image_size],stddev=0.01))
   biases_hidden1 = tf.Variable(tf.zeros([nHidden]))
-  biases = tf.Variable(tf.zeros([image_size*image_size]))
+  #biases = tf.Variable(tf.zeros([image_size*image_size]))
   
   # Training computation.
   hidden_comp=tf.matmul(tf_train_dataset, weights_hidden1)
   hidden1 = tf.nn.sigmoid(tf.mul(hidden_comp  + biases_hidden1,8))
-  output_units = tf.nn.sigmoid(tf.matmul(hidden1, weights) + biases)
+  output_units = tf.nn.sigmoid(tf.matmul(hidden1, tf.transpose(weights_hidden1)))
   loss = tf.div(tf.nn.l2_loss(tf.sub(output_units, tf_train_dataset)),tf.constant(float(batch_size)))
             
   # Optimizer.
   optimizer = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
   
   # Predictions for the training, validation, and test data.
-  valid_output_units=tf.nn.sigmoid(tf.matmul(tf.nn.sigmoid(tf.mul(tf.matmul(tf_valid_dataset, weights_hidden1)  + biases_hidden1,8)),weights)+biases)
+  valid_output_units=tf.nn.sigmoid(tf.matmul(tf.nn.sigmoid(tf.mul(tf.matmul(tf_valid_dataset,                         weights_hidden1)  + biases_hidden1,8)),tf.transpose(weights_hidden1)))
   valid_loss= tf.div(tf.nn.l2_loss(tf.sub(valid_output_units, tf_valid_dataset)),tf.constant(float(batch_size)))
     #l2_loss variation check
     #adaptive beta
     #sigmoid output
 
 
-# In[10]:
+# In[ ]:
 
 num_steps = 100000
 
@@ -115,9 +111,7 @@ with tf.Session(graph=graph) as session:
   # Prepare a dictionary telling the session where to feed the minibatch.
   # The key of the dictionary is the placeholder node of the graph to be fed,
   # and the value is the numpy array to feed to it.
-  feed_dict = {tf_train_dataset : batch_data}
-  _, l, v_l, valid_out_data = session.run([optimizer, loss, valid_loss, valid_output_units], feed_dict=feed_dict)
-  prev_v_l = v_l
+  prev_v_l = 20000
   for step in range(num_steps):
     # Pick an offset within the training data, which has been randomized.
     # Note: we could use better randomization across epochs.
@@ -262,7 +256,6 @@ import pickle
 
 
 # In[22]:
-
 
 fwf = open('feature_weights.pkl', 'wb')
 pickle.dump(feature_weights,fwf,2)
