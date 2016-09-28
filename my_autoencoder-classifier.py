@@ -11,7 +11,7 @@
 # 
 # The goal of this assignment is to train a sparse autoencoder network on MNIST Data and visulize its validation data reconstruction.
 
-# In[1]:
+# In[10]:
 
 # These are all the modules we'll be using later. Make sure you can import them
 # before proceeding further.
@@ -23,16 +23,32 @@ import tensorflow as tf
 from six.moves import cPickle as pickle
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.examples.tutorials.mnist import input_data
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+
 if re.search("ipykernel", sys.argv[0]) :
+    import matplotlib.pyplot as plt
+    import matplotlib.cm as cm
     print("Matplotlib is inline")
     get_ipython().magic(u'matplotlib inline')
 
 
+# In[2]:
+
+import pickle
+
+
+# In[14]:
+
+fbf = open('feature_baises.pkl', 'rb')
+fwf = open('feature_weights.pkl', 'rb')
+feature_weights = pickle.load(fwf)
+feature_baises = pickle.load(fbf)
+fwf.close()
+fbf.close()
+
+
 # First we load the MNIST data
 
-# In[2]:
+# In[15]:
 
 data_set = input_data.read_data_sets('', False)
 training_data=data_set.train
@@ -41,7 +57,7 @@ testing_data=data_set.test
 
 # Checking  the data
 
-# In[3]:
+# In[16]:
 
 images_feed, labels_feed = training_data.next_batch(10000,False)
 image_size = 28
@@ -53,13 +69,13 @@ np.min(images_feed)
 # - data as a flat matrix,
 # 
 
-# In[4]:
+# In[17]:
 
 validation_data=data_set.validation
 valid_batch,validation_labels=validation_data.next_batch(validation_data.num_examples)
 
 
-# In[9]:
+# In[18]:
 
 batch_size = 128
 nHidden=196
@@ -75,13 +91,15 @@ with graph.as_default():
   tf_train_dataset = tf.placeholder(tf.float32,
                                     shape=(batch_size, image_size * image_size))
   tf_valid_dataset = tf.constant(valid_batch)
+  tf_old_feature_weights = tf.constant(feature_weights)
+  tf_old_feature_baises = tf.constant(feature_baises)
   #tf_test_dataset = tf.constant(test_dataset)
    
   # Variables.
-  weights_hidden1 = tf.Variable(tf.truncated_normal([image_size * image_size, nHidden],stddev=0.01))
+  weights_hidden1 = tf.Variable(tf_old_feature_weights)
   #weights = tf.Variable(tf.truncated_normal([nHidden, image_size*image_size],stddev=0.01))
   biases_hidden1 = tf.Variable(tf.zeros([nHidden]))
-  #biases = tf.Variable(tf.zeros([image_size*image_size]))
+  #biases = tf.Variable(tf_old_feature_baises)
   
   # Training computation.
   hidden_comp=tf.matmul(tf_train_dataset, weights_hidden1)
@@ -100,9 +118,9 @@ with graph.as_default():
     #sigmoid output
 
 
-# In[ ]:
+# In[19]:
 
-num_steps = 100000
+step = 0
 
 with tf.Session(graph=graph) as session:
   tf.initialize_all_variables().run()
@@ -112,7 +130,8 @@ with tf.Session(graph=graph) as session:
   # The key of the dictionary is the placeholder node of the graph to be fed,
   # and the value is the numpy array to feed to it.
   prev_v_l = 20000
-  for step in range(num_steps):
+  while True:
+    step += 1
     # Pick an offset within the training data, which has been randomized.
     # Note: we could use better randomization across epochs.
     # Generate a minibatch.
@@ -123,6 +142,13 @@ with tf.Session(graph=graph) as session:
     feed_dict = {tf_train_dataset : batch_data}
     _, l, feature_weights, feature_biases= session.run(
       [optimizer, loss, weights_hidden1, biases_hidden1], feed_dict=feed_dict)
+    if step%100000 == 0:
+        fbf = open('feature_baises_' + steps + '.pkl', 'wb')
+        pickle.dump(feature_biases,fbf)
+        fbf.close()
+        fwf = open('feature_weights_' + steps + '.pkl', 'wb')
+        pickle.dump(feature_biases,fwf)
+        fwf.close()
     if step%500==0:
         _, l, v_l, valid_out_data = session.run([optimizer, loss, valid_loss,valid_output_units], feed_dict=feed_dict)
         print("step", step," \tTrain loss ",l, "\tValid loss",v_l)
@@ -149,8 +175,9 @@ for i in range(100):
 
 # ### Displaying the first 100 features used to do the reconstruction
 
-# In[5]:
+# In[12]:
 
+image_size=28
 print(feature_weights.shape)
 features=feature_weights.transpose()  
 print(features.shape)
@@ -250,26 +277,16 @@ with tf.Session(graph=graph) as session:
   print("Test accuracy: %.1f%%" % accuracy(test_prediction.eval(), test_labels))
 
 
-# In[2]:
+# In[7]:
 
-import pickle
-
-
-# In[22]:
-
-fwf = open('feature_weights.pkl', 'wb')
-pickle.dump(feature_weights,fwf,2)
+fwf = open('feature_weights_' + steps + '.pkl', 'wb')
+pickle.dump(feature_biases,fwf)
 
 
 # In[24]:
 
-fbf = open('feature_baises.pkl', 'wb')
+fbf = open('feature_baises_' + steps + '.pkl', 'wb')
 pickle.dump(feature_biases,fbf,2)
-
-
-# In[3]:
-
-feature_weights=pickle.load(open("feature_weights.pkl", "rb"))
 
 
 # In[9]:
