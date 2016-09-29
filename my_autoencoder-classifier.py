@@ -25,17 +25,11 @@ import tensorflow as tf
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.examples.tutorials.mnist import input_data
 
-if re.search("ipykernel", sys.argv[0]) :
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
-    print("Matplotlib is inline")
-    get_ipython().magic(u'matplotlib inline')
-
 
 # In[2]:
 
-fbf = open('feature_baises.pkl', 'rb')
-fwf = open('feature_weights.pkl', 'rb')
+fbf = open('feature_baises_9700000.pkl', 'rb')
+fwf = open('feature_weights_9700000.pkl', 'rb')
 feature_weights = pickle.load(fwf)
 feature_baises = pickle.load(fbf)
 fwf.close()
@@ -44,7 +38,7 @@ fbf.close()
 
 # First we load the MNIST data
 
-# In[3]:
+# In[5]:
 
 data_set = input_data.read_data_sets('', False)
 training_data = data_set.train
@@ -53,7 +47,7 @@ testing_data = data_set.test
 
 # Checking  the data
 
-# In[4]:
+# In[6]:
 
 images_feed, labels_feed = training_data.next_batch(10000, False)
 image_size = 28
@@ -65,13 +59,13 @@ np.min(images_feed)
 # - data as a flat matrix,
 # 
 
-# In[5]:
+# In[7]:
 
 validation_data = data_set.validation
 valid_batch, validation_labels = validation_data.next_batch(validation_data.num_examples)
 
 
-# In[6]:
+# In[23]:
 
 beta = 3
 rho = .1
@@ -118,7 +112,7 @@ with graph.as_default():
     #sigmoid output
 
 
-# In[7]:
+# In[ ]:
 
 step = 0
 
@@ -129,7 +123,7 @@ with tf.Session(graph=graph) as session:
     # Prepare a dictionary telling the session where to feed the minibatch.
     # The key of the dictionary is the placeholder node of the graph to be fed,
     # and the value is the numpy array to feed to it.
-    prev_v_l = 20000
+    v_l = 20000
     while True:
         step += 1
         # Pick an offset within the training data, which has been randomized.
@@ -152,6 +146,7 @@ with tf.Session(graph=graph) as session:
             fwf.close()
 
         if step%500 == 0:
+            prev_v_l = v_l
             _, l, v_l, valid_out_data = session.run(
                                             [optimizer, loss, valid_loss,valid_output_units],
                                             feed_dict=feed_dict)
@@ -160,13 +155,28 @@ with tf.Session(graph=graph) as session:
                 break
 
 
+# In[25]:
+
+with tf.Session(graph=graph) as session:
+    tf.initialize_all_variables().run()
+    print("Initialized")
+    valid_out_data = valid_output_units.eval()
+                                
+
+
 # ## Displaying the reconstruction of first 100 input images in validation by trained sparse autoencoder
 
-# In[17]:
+# In[3]:
 
-print(feature_weights.shape)
-features = feature_weights.transpose()  
-print(features.shape)
+if re.search("ipykernel", sys.argv[0]) :
+    import matplotlib.pyplot as plt
+    import matplotlib.cm as cm
+    print("Matplotlib is inline")
+    get_ipython().magic(u'matplotlib inline')
+    
+
+
+# In[26]:
 
 fig = plt.figure(figsize=(10,10))
 for i in range(100):
@@ -176,7 +186,7 @@ for i in range(100):
 
 # ### Displaying the first 100 features used to do the reconstruction
 
-# In[12]:
+# In[4]:
 
 image_size = 28
 print(feature_weights.shape)
@@ -191,12 +201,12 @@ for i in range(100):
 
 # ## Training Softmax Classifier
 
-# In[12]:
+# In[13]:
 
 test_dataset, testing_labels = testing_data.next_batch(testing_data.num_examples)
 
 
-# In[ ]:
+# In[14]:
 
 batch_size = 128
 num_labels = 10
@@ -210,7 +220,7 @@ with graph.as_default():
     # Input data. For the training data, we use a placeholder that will be fed
     # at run time with a training minibatch.
     weights_hidden1 = tf.constant(feature_weights)
-    biases_hidden1 = tf.constant(feature_biases)
+    biases_hidden1 = tf.constant(feature_baises)
     tf_train_dataset = tf.placeholder(tf.float32,
                                       shape=(batch_size, image_size * image_size))
     tf_train_labels = tf.placeholder(tf.float32, shape=(batch_size, num_labels))
@@ -237,7 +247,7 @@ with graph.as_default():
       tf.nn.sigmoid(tf.matmul(tf_test_dataset, weights_hidden1) + biases_hidden1), logit_weights) + logit_biases)
 
 
-# In[14]:
+# In[29]:
 
 def reformat(labels):
     # Map 0 to [1.0, 0.0, 0.0 ...], 1 to [0.0, 1.0, 0.0 ...]
@@ -248,16 +258,28 @@ def accuracy(predictions, labels):
     return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
             / predictions.shape[0])
 
+def save_data(weights, biases, weights_filename, biases_filename, step):
+    fbf = open(biases_filename + str(step) + '.pkl', 'wb')
+    pickle.dump(biases, fbf)
+    fbf.close()
+    fwf = open(weights_filename + str(step) + '.pkl', 'wb')
+    pickle.dump(weights, fwf)
+    fwf.close()
 
-# In[16]:
 
-num_steps = 100001
+# In[18]:
+
+def save_for_supervised():
+    return save_data(weights, biases, 'out_weights_', 'out_biases_', step)
+
+step = 0
 valid_labels = reformat(validation_labels)
-test_labels = reformat(testing_labels)
+valid_acc = 0
 with tf.Session(graph=graph) as session:
     tf.initialize_all_variables().run()
     print("Initialized")
-    for step in range(num_steps):
+    while True:
+        step += 1
         # Pick an offset within the training data, which has been randomized.
         # Note: we could use better randomization across epochs.
         batch_data, labels = training_data.next_batch(batch_size)
@@ -266,15 +288,45 @@ with tf.Session(graph=graph) as session:
         # The key of the dictionary is the placeholder node of the graph to be fed,
         # and the value is the numpy array to feed to it.
         feed_dict = {tf_train_dataset: batch_data, tf_train_labels: batch_labels}
-        _, l, predictions = session.run([optimizer, loss, train_prediction],
-                                        feed_dict=feed_dict)
+        _, l, predictions, weights, biases = session.run([optimizer, loss, train_prediction,
+                                                          logit_weights, logit_biases],
+                                                         feed_dict=feed_dict)
         if step%500 == 0:
-        print("Minibatch loss at step %d: %f" % (step, l))
-        print("Minibatch accuracy: %.1f%%" % accuracy(predictions, 
-                                                      batch_labels))
+            prev_valid_acc = valid_acc
+            print("Minibatch loss at step %d: %f" % (step, l))
+            print("Minibatch accuracy: %.1f%%" % accuracy(predictions, 
+                                                          batch_labels))
 
-        print("Validation accuracy: %.1f%%" % accuracy(valid_prediction.eval(),
-                                                       valid_labels))
+            valid_acc = accuracy(valid_prediction.eval(), valid_labels)
+            print("Validation accuracy: %.1f%%" % valid_acc)
+            
+            if prev_valid_acc > valid_acc:
+                save_for_supervised()
+                break
+                
+        if step%100000 == 0:
+            save_for_supervised()
+            
     print("Test accuracy: %.1f%%" % accuracy(test_prediction.eval(),
                                              test_labels))
+
+
+# In[20]:
+
+valid_acc
+
+
+# In[27]:
+
+prev_valid_acc
+
+
+# In[30]:
+
+save_data(weights, biases, 'out_weights', 'out_biases', step)
+
+
+# In[ ]:
+
+
 
