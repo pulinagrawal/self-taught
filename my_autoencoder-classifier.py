@@ -155,6 +155,33 @@ with tf.Session(graph=graph) as session:
                 break
 
 
+# ### Output from the Run on cluster
+
+# .
+# .
+# .
+# .
+# 
+# step 9750000    Train loss  2.56298     Valid loss 113.472
+# 
+# step 9750500    Train loss  2.80224     Valid loss 113.468
+# 
+# step 9751000    Train loss  2.59853     Valid loss 113.471
+# step 9751500    Train loss  2.65598     Valid loss 113.47
+# step 9752000    Train loss  2.50461     Valid loss 113.47
+# step 9752500    Train loss  2.63187     Valid loss 113.468
+# step 9753000    Train loss  2.84001     Valid loss 113.472
+# step 9753500    Train loss  2.6863      Valid loss 113.471
+# step 9754000    Train loss  2.73344     Valid loss 113.47
+# step 9754500    Train loss  2.63237     Valid loss 113.47
+# step 9755000    Train loss  2.52693     Valid loss 113.47
+# step 9755500    Train loss  2.56478     Valid loss 113.469
+# step 9756000    Train loss  2.50033     Valid loss 113.469
+# step 9756500    Train loss  2.6211      Valid loss 113.469
+
+# ## Need to do the following to get the validation data
+# ##### Because the run was done on the cluster.
+
 # In[25]:
 
 with tf.Session(graph=graph) as session:
