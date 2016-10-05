@@ -65,7 +65,7 @@ validation_data = data_set.validation
 valid_batch, validation_labels = validation_data.next_batch(validation_data.num_examples)
 
 
-# In[23]:
+# In[1]:
 
 beta = 3
 rho = .1
@@ -81,35 +81,33 @@ with graph.as_default():
     tf_train_dataset = tf.placeholder(tf.float32,
                                       shape=(batch_size, image_size * image_size))
     tf_valid_dataset = tf.constant(valid_batch)
-    tf_old_feature_weights = tf.constant(feature_weights)
-    tf_old_feature_baises = tf.constant(feature_baises)
-   
+    #tf_test_dataset = tf.constant(test_dataset)
+
     # Variables.
-    weights_hidden1 = tf.Variable(tf_old_feature_weights)
+    weights_hidden1 = tf.Variable(tf.truncated_normal([image_size * image_size, nHidden], stddev=0.01))
+    weights = tf.Variable(tf.truncated_normal([nHidden, image_size*image_size], stddev=0.01))
     biases_hidden1 = tf.Variable(tf.zeros([nHidden]))
-  
+    biases = tf.Variable(tf.zeros([image_size*image_size]))
+
     # Training computation.
-    hidden_comp = tf.matmul(tf_train_dataset, weights_hidden1)
-    hidden1 = tf.nn.sigmoid(tf.mul(hidden_comp + biases_hidden1,8))
-    output_units = tf.nn.sigmoid(tf.matmul(hidden1, tf.transpose(weights_hidden1)))
-    loss = tf.div(tf.nn.l2_loss(tf.sub(output_units, tf_train_dataset)),
-                  tf.constant(float(batch_size)))
-              
+    hidden_comp=tf.matmul(tf_train_dataset, weights_hidden1)
+    hidden1 = tf.nn.sigmoid(tf.mul(hidden_comp  + biases_hidden1, 8))
+    output_units = tf.nn.sigmoid(tf.matmul(hidden1, weights) + biases)
+    loss = tf.div(tf.nn.l2_loss(tf.sub(output_units, tf_train_dataset)), tf.constant(float(batch_size)))
+
     # Optimizer.
     optimizer = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
-  
+
     # Predictions for the training, validation, and test data.
-    valid_output_units = tf.nn.sigmoid(tf.matmul(
-                             tf.nn.sigmoid(tf.mul(tf.matmul(tf_valid_dataset, 
-                                                            weights_hidden1) 
-                                                  + biases_hidden1, 
-                                                  8)),
-                             tf.transpose(weights_hidden1)))
-    valid_loss = tf.div(tf.nn.l2_loss(tf.sub(valid_output_units, tf_valid_dataset)),
+    valid_output_units=tf.nn.sigmoid(tf.matmul(
+                                tf.nn.sigmoid(tf.mul(tf.matmul(tf_valid_dataset, 
+                                                               weights_hidden1)  
+                                                     + biases_hidden1,
+                                                     8)), 
+                                               weights) + biases)
+    valid_loss= tf.div(tf.nn.l2_loss(
+                            tf.sub(valid_output_units, tf_valid_dataset)), 
                        tf.constant(float(batch_size)))
-    #l2_loss variation check
-    #adaptive beta
-    #sigmoid output
 
 
 # In[ ]:
