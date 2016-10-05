@@ -26,16 +26,6 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.examples.tutorials.mnist import input_data
 
 
-# In[2]:
-
-fbf = open('feature_baises_9700000.pkl', 'rb')
-fwf = open('feature_weights_9700000.pkl', 'rb')
-feature_weights = pickle.load(fwf)
-feature_baises = pickle.load(fbf)
-fwf.close()
-fbf.close()
-
-
 # First we load the MNIST data
 
 # In[5]:
