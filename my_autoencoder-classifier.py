@@ -63,6 +63,7 @@ nHidden = 196
 image_size = 28
 batch_size = 128
 
+def get_graph(input_units, input_size, nHidden,)
 graph = tf.Graph()
 with graph.as_default():
 
@@ -83,7 +84,19 @@ with graph.as_default():
     hidden_comp=tf.matmul(tf_train_dataset, weights_hidden1)
     hidden1 = tf.nn.sigmoid(tf.mul(hidden_comp  + biases_hidden1, 8))
     output_units = tf.nn.sigmoid(tf.matmul(hidden1, weights) + biases)
-    loss = tf.div(tf.nn.l2_loss(tf.sub(output_units, tf_train_dataset)), tf.constant(float(batch_size)))
+    
+    # Sparsity computation
+    int_rho = tf.reduce_sum(hidden1, 0)
+    rho_hat = tf.div(int_rho, batch_size)
+    rho_hat_mean = tf.reduce_mean(rho_hat)
+    rho_in = tf.sub(tf.constant(1.), rho)
+    rho_hat_in = tf.sub(tf.constant(1.), rho_hat)
+    klterm = tf.add(tf.mul(rho, tf.log(tf.div(rho, rho_hat))),
+                    tf.mul(rho_in, tf.log(tf.div(rho_in, rho_hat_in))))
+    kl_div = tf.reduce_sum(klterm)
+    
+    loss = tf.div(tf.nn.l2_loss(tf.sub(output_units, tf_train_dataset)), 
+                                tf.constant(float(batch_size))) + beta*kl_div
 
     # Optimizer.
     optimizer = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
@@ -176,7 +189,6 @@ with tf.Session(graph=graph) as session:
     tf.initialize_all_variables().run()
     print("Initialized")
     valid_out_data = valid_output_units.eval()
-                                
 
 
 # ## Displaying the reconstruction of first 100 input images in validation by trained sparse autoencoder
@@ -188,7 +200,6 @@ if re.search("ipykernel", sys.argv[0]) :
     import matplotlib.cm as cm
     print("Matplotlib is inline")
     get_ipython().magic(u'matplotlib inline')
-    
 
 
 # In[26]:

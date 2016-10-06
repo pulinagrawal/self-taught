@@ -11902,6 +11902,7 @@ Extracting t10k-labels-idx1-ubyte.gz
 <span class="n">image_size</span> <span class="o">=</span> <span class="mi">28</span>
 <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">128</span>
 
+<span class="k">def</span> <span class="nf">get_graph</span><span class="p">(</span><span class="n">input_units</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="n">nHidden</span><span class="p">,)</span>
 <span class="n">graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
 <span class="k">with</span> <span class="n">graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
 
@@ -11922,7 +11923,19 @@ Extracting t10k-labels-idx1-ubyte.gz
     <span class="n">hidden_comp</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">tf_train_dataset</span><span class="p">,</span> <span class="n">weights_hidden1</span><span class="p">)</span>
     <span class="n">hidden1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">mul</span><span class="p">(</span><span class="n">hidden_comp</span>  <span class="o">+</span> <span class="n">biases_hidden1</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
     <span class="n">output_units</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">hidden1</span><span class="p">,</span> <span class="n">weights</span><span class="p">)</span> <span class="o">+</span> <span class="n">biases</span><span class="p">)</span>
-    <span class="n">loss</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">l2_loss</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">output_units</span><span class="p">,</span> <span class="n">tf_train_dataset</span><span class="p">)),</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)))</span>
+    
+    <span class="c1"># Sparsity computation</span>
+    <span class="n">int_rho</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">hidden1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">rho_hat</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">int_rho</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+    <span class="n">rho_hat_mean</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">rho_hat</span><span class="p">)</span>
+    <span class="n">rho_in</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">1.</span><span class="p">),</span> <span class="n">rho</span><span class="p">)</span>
+    <span class="n">rho_hat_in</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">1.</span><span class="p">),</span> <span class="n">rho_hat</span><span class="p">)</span>
+    <span class="n">klterm</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">mul</span><span class="p">(</span><span class="n">rho</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">rho</span><span class="p">,</span> <span class="n">rho_hat</span><span class="p">))),</span>
+                    <span class="n">tf</span><span class="o">.</span><span class="n">mul</span><span class="p">(</span><span class="n">rho_in</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">rho_in</span><span class="p">,</span> <span class="n">rho_hat_in</span><span class="p">))))</span>
+    <span class="n">kl_div</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">klterm</span><span class="p">)</span>
+    
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">l2_loss</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">output_units</span><span class="p">,</span> <span class="n">tf_train_dataset</span><span class="p">)),</span> 
+                                <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)))</span> <span class="o">+</span> <span class="n">beta</span><span class="o">*</span><span class="n">kl_div</span>
 
     <span class="c1"># Optimizer.</span>
     <span class="n">optimizer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">GradientDescentOptimizer</span><span class="p">(</span><span class="mf">0.001</span><span class="p">)</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
@@ -12072,7 +12085,6 @@ step 9756500    Train loss  2.6211      Valid loss 113.469</p>
     <span class="n">tf</span><span class="o">.</span><span class="n">initialize_all_variables</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
     <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Initialized&quot;</span><span class="p">)</span>
     <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">valid_output_units</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
-                                
 </pre></div>
 
 </div>
@@ -12113,7 +12125,6 @@ step 9756500    Train loss  2.6211      Valid loss 113.469</p>
     <span class="kn">import</span> <span class="nn">matplotlib.cm</span> <span class="kn">as</span> <span class="nn">cm</span>
     <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Matplotlib is inline&quot;</span><span class="p">)</span>
     <span class="o">%</span><span class="k">matplotlib</span> inline
-    
 </pre></div>
 
 </div>
