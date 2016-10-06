@@ -26,19 +26,38 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.examples.tutorials.mnist import input_data
 
 
-# In[2]:
-
-fbf = open('feature_baises_9700000.pkl', 'rb')
-fwf = open('feature_weights_9700000.pkl', 'rb')
-feature_weights = pickle.load(fwf)
-feature_baises = pickle.load(fbf)
-fwf.close()
-fbf.close()
-
-
 # First we load the MNIST data
 
-# In[5]:
+# In[2]:
+
+def reformat(labels):
+    # Map 0 to [1.0, 0.0, 0.0 ...], 1 to [0.0, 1.0, 0.0 ...]
+    labels = (np.arange(num_labels) == labels[:,None]).astype(np.float32)
+    return labels
+
+def accuracy(predictions, labels):
+    return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
+            / predictions.shape[0])
+
+def save_data(weights, biases, weights_filename, biases_filename, step):
+    fbf = open(biases_filename + str(step) + '.pkl', 'wb')
+    pickle.dump(biases, fbf)
+    fbf.close()
+    fwf = open(weights_filename + str(step) + '.pkl', 'wb')
+    pickle.dump(weights, fwf)
+    fwf.close()
+    
+def load_data(weights_filename, biases_filename):
+    fwf = open(weights_filename, 'rb')
+    weights = pickle.load(fwf)
+    fwf.close()
+    fbf = open(biases_filename, 'rb')
+    biases = pickle.load(fbf)
+    fbf.close()
+    return weights, biases
+
+
+# In[3]:
 
 data_set = input_data.read_data_sets('', False)
 training_data = data_set.train
@@ -47,7 +66,7 @@ testing_data = data_set.test
 
 # Checking  the data
 
-# In[6]:
+# In[4]:
 
 images_feed, labels_feed = training_data.next_batch(10000, False)
 image_size = 28
@@ -59,13 +78,18 @@ np.min(images_feed)
 # - data as a flat matrix,
 # 
 
-# In[7]:
+# In[5]:
 
 validation_data = data_set.validation
 valid_batch, validation_labels = validation_data.next_batch(validation_data.num_examples)
 
 
-# In[23]:
+# In[ ]:
+
+
+
+
+# In[1]:
 
 beta = 3
 rho = .1
@@ -81,35 +105,45 @@ with graph.as_default():
     tf_train_dataset = tf.placeholder(tf.float32,
                                       shape=(batch_size, image_size * image_size))
     tf_valid_dataset = tf.constant(valid_batch)
-    tf_old_feature_weights = tf.constant(feature_weights)
-    tf_old_feature_baises = tf.constant(feature_baises)
-   
+    #tf_test_dataset = tf.constant(test_dataset)
+
     # Variables.
-    weights_hidden1 = tf.Variable(tf_old_feature_weights)
+    weights_hidden1 = tf.Variable(tf.truncated_normal([image_size * image_size, nHidden], stddev=0.01))
+    weights = tf.Variable(tf.truncated_normal([nHidden, image_size*image_size], stddev=0.01))
     biases_hidden1 = tf.Variable(tf.zeros([nHidden]))
-  
+    biases = tf.Variable(tf.zeros([image_size*image_size]))
+
     # Training computation.
-    hidden_comp = tf.matmul(tf_train_dataset, weights_hidden1)
-    hidden1 = tf.nn.sigmoid(tf.mul(hidden_comp + biases_hidden1,8))
-    output_units = tf.nn.sigmoid(tf.matmul(hidden1, tf.transpose(weights_hidden1)))
-    loss = tf.div(tf.nn.l2_loss(tf.sub(output_units, tf_train_dataset)),
-                  tf.constant(float(batch_size)))
-              
+    hidden_comp=tf.matmul(tf_train_dataset, weights_hidden1)
+    hidden1 = tf.nn.sigmoid(tf.mul(hidden_comp  + biases_hidden1, 8))
+    output_units = tf.nn.sigmoid(tf.matmul(hidden1, weights) + biases)
+    
+    # Sparsity computation
+    int_rho = tf.reduce_sum(hidden1, 0)
+    rho_hat = tf.div(int_rho, batch_size)
+    rho_hat_mean = tf.reduce_mean(rho_hat)
+    rho_in = tf.sub(tf.constant(1.), rho)
+    rho_hat_in = tf.sub(tf.constant(1.), rho_hat)
+    klterm = tf.add(tf.mul(rho, tf.log(tf.div(rho, rho_hat))),
+                    tf.mul(rho_in, tf.log(tf.div(rho_in, rho_hat_in))))
+    kl_div = tf.reduce_sum(klterm)
+    
+    loss = tf.div(tf.nn.l2_loss(tf.sub(output_units, tf_train_dataset)), 
+                                tf.constant(float(batch_size))) + beta*kl_div
+
     # Optimizer.
     optimizer = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
-  
+
     # Predictions for the training, validation, and test data.
-    valid_output_units = tf.nn.sigmoid(tf.matmul(
-                             tf.nn.sigmoid(tf.mul(tf.matmul(tf_valid_dataset, 
-                                                            weights_hidden1) 
-                                                  + biases_hidden1, 
-                                                  8)),
-                             tf.transpose(weights_hidden1)))
-    valid_loss = tf.div(tf.nn.l2_loss(tf.sub(valid_output_units, tf_valid_dataset)),
+    valid_output_units=tf.nn.sigmoid(tf.matmul(
+                                tf.nn.sigmoid(tf.mul(tf.matmul(tf_valid_dataset, 
+                                                               weights_hidden1)  
+                                                     + biases_hidden1,
+                                                     8)), 
+                                               weights) + biases)
+    valid_loss= tf.div(tf.nn.l2_loss(
+                            tf.sub(valid_output_units, tf_valid_dataset)), 
                        tf.constant(float(batch_size)))
-    #l2_loss variation check
-    #adaptive beta
-    #sigmoid output
 
 
 # In[ ]:
@@ -188,7 +222,6 @@ with tf.Session(graph=graph) as session:
     tf.initialize_all_variables().run()
     print("Initialized")
     valid_out_data = valid_output_units.eval()
-                                
 
 
 # ## Displaying the reconstruction of first 100 input images in validation by trained sparse autoencoder
@@ -200,7 +233,6 @@ if re.search("ipykernel", sys.argv[0]) :
     import matplotlib.cm as cm
     print("Matplotlib is inline")
     get_ipython().magic(u'matplotlib inline')
-    
 
 
 # In[26]:
@@ -228,12 +260,18 @@ for i in range(100):
 
 # ## Training Softmax Classifier
 
-# In[13]:
+# In[7]:
+
+feature_weights, feature_biases = load_data('feature_weights_9700000.pkl', 'feature_baises_9700000.pkl')
+
+
+# In[12]:
 
 test_dataset, testing_labels = testing_data.next_batch(testing_data.num_examples)
+test_labels = reformat(testing_labels)
 
 
-# In[14]:
+# In[13]:
 
 batch_size = 128
 num_labels = 10
@@ -247,7 +285,7 @@ with graph.as_default():
     # Input data. For the training data, we use a placeholder that will be fed
     # at run time with a training minibatch.
     weights_hidden1 = tf.constant(feature_weights)
-    biases_hidden1 = tf.constant(feature_baises)
+    biases_hidden1 = tf.constant(feature_biases)
     tf_train_dataset = tf.placeholder(tf.float32,
                                       shape=(batch_size, image_size * image_size))
     tf_train_labels = tf.placeholder(tf.float32, shape=(batch_size, num_labels))
@@ -269,32 +307,18 @@ with graph.as_default():
     # Predictions for the training, validation, and test data.
     train_prediction = tf.nn.softmax(logits)
     valid_prediction = tf.nn.softmax(tf.matmul(
-      tf.nn.sigmoid(tf.matmul(tf_valid_dataset, weights_hidden1) + biases_hidden1), logit_weights) + logit_biases)
+                              tf.nn.sigmoid(tf.mul(tf.matmul(tf_valid_dataset, 
+                                                             weights_hidden1) + biases_hidden1,
+                                                   8)),
+                                            logit_weights) + logit_biases)
     test_prediction = tf.nn.softmax(tf.matmul(
-      tf.nn.sigmoid(tf.matmul(tf_test_dataset, weights_hidden1) + biases_hidden1), logit_weights) + logit_biases)
+                              tf.nn.sigmoid(tf.mul(tf.matmul(tf_test_dataset,
+                                                             weights_hidden1) + biases_hidden1,
+                                                   8)), 
+                                            logit_weights) + logit_biases)
 
 
-# In[29]:
-
-def reformat(labels):
-    # Map 0 to [1.0, 0.0, 0.0 ...], 1 to [0.0, 1.0, 0.0 ...]
-    labels = (np.arange(num_labels) == labels[:,None]).astype(np.float32)
-    return labels
-
-def accuracy(predictions, labels):
-    return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
-            / predictions.shape[0])
-
-def save_data(weights, biases, weights_filename, biases_filename, step):
-    fbf = open(biases_filename + str(step) + '.pkl', 'wb')
-    pickle.dump(biases, fbf)
-    fbf.close()
-    fwf = open(weights_filename + str(step) + '.pkl', 'wb')
-    pickle.dump(weights, fwf)
-    fwf.close()
-
-
-# In[18]:
+# In[14]:
 
 def save_for_supervised():
     return save_data(weights, biases, 'out_weights_', 'out_biases_', step)
