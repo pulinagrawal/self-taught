@@ -187,7 +187,7 @@ with tf.Session(graph=graph) as session:
         # and the value is the numpy array to feed to it.
         feed_dict = {tf_train_dataset: batch_data}
         out = session.run(
-                                        0          [optimizer, loss, weights_hidden1, biases_hidden1, biases], 
+                                                  [optimizer, loss, weights_hidden1, biases_hidden1, biases], 
                                                   feed_dict=feed_dict)
         _, l, model = out[0], out[1], out[2:]
         if step%100000 == 0:
