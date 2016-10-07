@@ -164,7 +164,7 @@ with graph.as_default():
         tf.constant(float(batch_size)))
 
 
-# In[ ]:
+# In[12]:
 
 step = 0
 verify_validation = False, 1, 1
@@ -187,7 +187,7 @@ with tf.Session(graph=graph) as session:
         # and the value is the numpy array to feed to it.
         feed_dict = {tf_train_dataset: batch_data}
         out = session.run(
-                                                  [optimizer, loss, weights_hidden1, biases_hidden1, biases], 
+                                        0          [optimizer, loss, weights_hidden1, biases_hidden1, biases], 
                                                   feed_dict=feed_dict)
         _, l, model = out[0], out[1], out[2:]
         if step%100000 == 0:
@@ -195,7 +195,7 @@ with tf.Session(graph=graph) as session:
 
         if verify_validation[0]:
             _, l, v_l, valid_out_data = session.run(
-                                            [optimizer, loss, valid_loss, valid_output_units],
+                                    [optimizer, loss, valid_loss, valid_output_units],
                                             feed_dict=feed_dict)
             print("step", step, " \tTrain loss ", l, "\tValid loss", v_l)
             if v_l < verify_validation[0]:
@@ -203,6 +203,7 @@ with tf.Session(graph=graph) as session:
                     print("Found better validation. Looking for better...")
                     verify_validation = True, v_l, step
             if step > verify_validation[2]+100:
+                save_model(model, 'model', step)
                 break
         else:
             if step%500 == 0:
@@ -212,7 +213,9 @@ with tf.Session(graph=graph) as session:
                                                 feed_dict=feed_dict)
                 print("step", step, " \tTrain loss ", l, "\tValid loss", v_l)
                 if prev_v_l < v_l:
-                    break
+                    save_model(model, 'model', step)
+                    print("Looking for better validation now...")
+                    verify_validation = True, v_l, step
 
 
 # ### Output from the Run on cluster

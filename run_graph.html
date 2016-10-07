@@ -12024,7 +12024,7 @@ Extracting t10k-labels-idx1-ubyte.gz
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>
@@ -12048,7 +12048,7 @@ Extracting t10k-labels-idx1-ubyte.gz
         <span class="c1"># and the value is the numpy array to feed to it.</span>
         <span class="n">feed_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">tf_train_dataset</span><span class="p">:</span> <span class="n">batch_data</span><span class="p">}</span>
         <span class="n">out</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-                                                  <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">weights_hidden1</span><span class="p">,</span> <span class="n">biases_hidden1</span><span class="p">,</span> <span class="n">biases</span><span class="p">],</span> 
+                                        <span class="mi">0</span>          <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">weights_hidden1</span><span class="p">,</span> <span class="n">biases_hidden1</span><span class="p">,</span> <span class="n">biases</span><span class="p">],</span> 
                                                   <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
         <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">100000</span> == 0:
@@ -12056,7 +12056,7 @@ Extracting t10k-labels-idx1-ubyte.gz
 
         <span class="k">if</span> <span class="n">verify_validation</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
             <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-                                            <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">valid_loss</span><span class="p">,</span> <span class="n">valid_output_units</span><span class="p">],</span>
+                                    <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">valid_loss</span><span class="p">,</span> <span class="n">valid_output_units</span><span class="p">],</span>
                                             <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
             <span class="k">print</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="s2">&quot; </span><span class="se">\t</span><span class="s2">Train loss &quot;</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Valid loss&quot;</span><span class="p">,</span> <span class="n">v_l</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">v_l</span> <span class="o">&lt;</span> <span class="n">verify_validation</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
@@ -12064,6 +12064,7 @@ Extracting t10k-labels-idx1-ubyte.gz
                     <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Found better validation. Looking for better...&quot;</span><span class="p">)</span>
                     <span class="n">verify_validation</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">step</span>
             <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;</span> <span class="n">verify_validation</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mi">100</span><span class="p">:</span>
+                <span class="n">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
                 <span class="k">break</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">500</span> == 0:
@@ -12073,7 +12074,9 @@ Extracting t10k-labels-idx1-ubyte.gz
                                                 <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
                 <span class="k">print</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="s2">&quot; </span><span class="se">\t</span><span class="s2">Train loss &quot;</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Valid loss&quot;</span><span class="p">,</span> <span class="n">v_l</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">prev_v_l</span> <span class="o">&lt;</span> <span class="n">v_l</span><span class="p">:</span>
-                    <span class="k">break</span>
+                    <span class="n">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Looking for better validation now...&quot;</span><span class="p">)</span>
+                    <span class="n">verify_validation</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">step</span>
 </pre></div>
 
 </div>
@@ -12087,8 +12090,23 @@ Extracting t10k-labels-idx1-ubyte.gz
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>Initialized
-step 500  	Train loss  6.17109 	Valid loss 245.068
 </pre>
+</div>
+</div>
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_text output_error">
+<pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">TypeError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-12-7c48c29902fe&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">     20</span>         feed_dict <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">{</span>tf_train_dataset<span class="ansi-blue-fg">:</span> batch_data<span class="ansi-blue-fg">}</span>
+<span class="ansi-green-intense-fg ansi-bold">     21</span>         out = session.run(
+<span class="ansi-green-fg">---&gt; 22</span><span class="ansi-red-fg">                                         </span><span class="ansi-cyan-fg">0</span>          <span class="ansi-blue-fg">[</span>optimizer<span class="ansi-blue-fg">,</span> loss<span class="ansi-blue-fg">,</span> weights_hidden1<span class="ansi-blue-fg">,</span> biases_hidden1<span class="ansi-blue-fg">,</span> biases<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">     23</span>                                                   feed_dict=feed_dict)
+<span class="ansi-green-intense-fg ansi-bold">     24</span>         _<span class="ansi-blue-fg">,</span> l<span class="ansi-blue-fg">,</span> model <span class="ansi-blue-fg">=</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">2</span><span class="ansi-blue-fg">:</span><span class="ansi-blue-fg">]</span>
+
+<span class="ansi-red-fg">TypeError</span>: &#39;int&#39; object has no attribute &#39;__getitem__&#39;</pre>
 </div>
 </div>
 
