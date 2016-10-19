@@ -11,7 +11,7 @@
 # 
 # The goal of this assignment is to train a sparse autoencoder network on MNIST Data and visulize its validation data reconstruction.
 
-# In[1]:
+# In[12]:
 
 # These are all the modules we'll be using later. Make sure you can import them
 # before proceeding further.
@@ -26,7 +26,7 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.examples.tutorials.mnist import input_data
 
 
-# In[2]:
+# In[13]:
 
 
 class NoValue:
@@ -39,7 +39,7 @@ _no_value = NoValue()
 
 
 
-# In[3]:
+# In[14]:
 
 def reformat(labels):
     # Map 0 to [1.0, 0.0, 0.0 ...], 1 to [0.0, 1.0, 0.0 ...]
@@ -70,7 +70,7 @@ def load_model(filename):
 
 # First we load the MNIST data
 
-# In[4]:
+# In[15]:
 
 data_set = input_data.read_data_sets('', False)
 training_data = data_set.train
@@ -79,7 +79,7 @@ testing_data = data_set.test
 
 # Checking  the data
 
-# In[5]:
+# In[16]:
 
 images_feed, labels_feed = training_data.next_batch(10000, False)
 image_size = 28
@@ -91,13 +91,13 @@ np.min(images_feed)
 # - data as a flat matrix,
 # 
 
-# In[6]:
+# In[17]:
 
 validation_data = data_set.validation
 valid_batch, validation_labels = validation_data.next_batch(validation_data.num_examples)
 
 
-# In[7]:
+# In[18]:
 
 beta = 3
 rho = .1
@@ -105,7 +105,7 @@ nHidden = 196
 image_size = 28
 batch_size = 128
 
-start_model = _no_value
+start_model = load_model('model414000.pkl')
 sparse = False
 batch_size, input_size, nHidden, valid_batch = (batch_size, image_size*image_size, 
                                                                          nHidden, 
@@ -228,9 +228,9 @@ with tf.Session(graph=graph) as session:
                     verify_validation = True, v_l, step
 
 
-# In[14]:
+# In[4]:
 
-feature_weights, feature_biases, biases = load_model('model319101.pkl')
+feature_weights, feature_biases, biases = load_model('model414000.pkl')
 
 
 # ### Output from the Run on cluster
@@ -260,7 +260,7 @@ feature_weights, feature_biases, biases = load_model('model319101.pkl')
 # ## Need to do the following to get the validation data
 # ##### Because the run was done on the cluster.
 
-# In[25]:
+# In[19]:
 
 with tf.Session(graph=graph) as session:
     tf.initialize_all_variables().run()
@@ -270,7 +270,7 @@ with tf.Session(graph=graph) as session:
 
 # ## Displaying the reconstruction of first 100 input images in validation by trained sparse autoencoder
 
-# In[16]:
+# In[8]:
 
 if re.search("ipykernel", sys.argv[0]) :
     import matplotlib.pyplot as plt
@@ -279,7 +279,7 @@ if re.search("ipykernel", sys.argv[0]) :
     get_ipython().magic(u'matplotlib inline')
 
 
-# In[17]:
+# In[20]:
 
 fig = plt.figure(figsize=(10,10))
 for i in range(100):
@@ -289,7 +289,7 @@ for i in range(100):
 
 # ### Displaying the first 100 features used to do the reconstruction
 
-# In[18]:
+# In[10]:
 
 image_size = 28
 print(feature_weights.shape)
