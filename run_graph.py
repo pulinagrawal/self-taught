@@ -62,6 +62,11 @@ def save_model(model, filename, step):
     with open(filename+str(step)+'.pkl', 'wb') as mf:
         pickle.dump(model, mf)
 
+def load_model(filename):
+    with open(filename, 'rb') as mf:
+        model = pickle.load(mf)
+    return model
+
 
 # First we load the MNIST data
 
@@ -116,6 +121,8 @@ with graph.as_default():
     # tf_test_dataset = tf.constant(test_dataset)
 
     # Variables.
+    # Tied Weights Model- without tied weights 
+    #                     the autoencoder can easily learn the identity given a big enough hidden layer.
     if start_model is _no_value:
         weights_hidden1 = tf.Variable(tf.truncated_normal([input_size, nHidden], stddev=0.01))
         biases_hidden1 = tf.Variable(tf.zeros([nHidden]))
@@ -164,7 +171,7 @@ with graph.as_default():
         tf.constant(float(batch_size)))
 
 
-# In[12]:
+# In[8]:
 
 step = 0
 verify_validation = False, 1, 1
@@ -201,7 +208,10 @@ with tf.Session(graph=graph) as session:
             if v_l < verify_validation[0]:
                     save_model(model, 'model', step)
                     print("Found better validation. Looking for better...")
-                    verify_validation = True, v_l, step
+                    if step < verify_validation[2]+100:
+                        verify_validation = True, v_l, step
+                    else:
+                        verify_validation = False, v_l, step
             if step > verify_validation[2]+100:
                 save_model(model, 'model', step)
                 break
@@ -216,6 +226,11 @@ with tf.Session(graph=graph) as session:
                     save_model(model, 'model', step)
                     print("Looking for better validation now...")
                     verify_validation = True, v_l, step
+
+
+# In[14]:
+
+feature_weights, feature_biases, biases = load_model('model319101.pkl')
 
 
 # ### Output from the Run on cluster
@@ -255,7 +270,7 @@ with tf.Session(graph=graph) as session:
 
 # ## Displaying the reconstruction of first 100 input images in validation by trained sparse autoencoder
 
-# In[3]:
+# In[16]:
 
 if re.search("ipykernel", sys.argv[0]) :
     import matplotlib.pyplot as plt
@@ -264,7 +279,7 @@ if re.search("ipykernel", sys.argv[0]) :
     get_ipython().magic(u'matplotlib inline')
 
 
-# In[26]:
+# In[17]:
 
 fig = plt.figure(figsize=(10,10))
 for i in range(100):
@@ -274,7 +289,7 @@ for i in range(100):
 
 # ### Displaying the first 100 features used to do the reconstruction
 
-# In[4]:
+# In[18]:
 
 image_size = 28
 print(feature_weights.shape)
@@ -289,12 +304,12 @@ for i in range(100):
 
 # ## Training Softmax Classifier
 
-# In[13]:
+# In[19]:
 
 test_dataset, testing_labels = testing_data.next_batch(testing_data.num_examples)
 
 
-# In[14]:
+# In[23]:
 
 batch_size = 128
 num_labels = 10
@@ -308,7 +323,7 @@ with graph.as_default():
     # Input data. For the training data, we use a placeholder that will be fed
     # at run time with a training minibatch.
     weights_hidden1 = tf.constant(feature_weights)
-    biases_hidden1 = tf.constant(feature_baises)
+    biases_hidden1 = tf.constant(feature_biases)
     tf_train_dataset = tf.placeholder(tf.float32,
                                       shape=(batch_size, image_size * image_size))
     tf_train_labels = tf.placeholder(tf.float32, shape=(batch_size, num_labels))
@@ -320,7 +335,7 @@ with graph.as_default():
     logit_biases = tf.Variable(tf.zeros([num_labels]))
 
     # Training computation.
-    hidden1 = tf.nn.sigmoid(tf.mul(tf.matmul(tf_train_dataset, weights_hidden1)  + biases_hidden1, 8))
+    hidden1 = tf.nn.sigmoid(tf.matmul(tf_train_dataset, weights_hidden1)  + biases_hidden1)
     logits = tf.matmul(hidden1, logit_weights) + logit_biases
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, tf_train_labels))
 
@@ -335,7 +350,7 @@ with graph.as_default():
       tf.nn.sigmoid(tf.matmul(tf_test_dataset, weights_hidden1) + biases_hidden1), logit_weights) + logit_biases)
 
 
-# In[18]:
+# In[24]:
 
 def save_for_supervised():
     return save_data(weights, biases, 'out_weights_', 'out_biases_', step)
