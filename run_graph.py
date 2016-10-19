@@ -183,7 +183,7 @@ def stopping_criterion(curr_valid, best_valid):
             False
 
 
-# In[8]:
+# In[21]:
 
 step = 0
 verify_validation = False, 1, 1
@@ -208,7 +208,7 @@ with tf.Session(graph=graph) as session:
         out = session.run(
                                                   [optimizer, loss, learning_rate, weights_hidden1, biases_hidden1, biases], 
                                                   feed_dict=feed_dict)
-        _, l, learn_rate, model = out[0], out[1], out[2:]
+        _, l, learn_rate, model = out[0], out[1], out[2] out[3:]
         if step%100000 == 0:
             save_model(model, 'model', step)
 

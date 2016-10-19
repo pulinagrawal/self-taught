@@ -12051,7 +12051,7 @@ Extracting t10k-labels-idx1-ubyte.gz
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[21]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>
@@ -12077,7 +12077,7 @@ Extracting t10k-labels-idx1-ubyte.gz
         <span class="n">out</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
                                                   <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">weights_hidden1</span><span class="p">,</span> <span class="n">biases_hidden1</span><span class="p">,</span> <span class="n">biases</span><span class="p">],</span> 
                                                   <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">learn_rate</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">learn_rate</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="n">out</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
         <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">100000</span> == 0:
             <span class="n">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
 
@@ -12108,247 +12108,23 @@ Extracting t10k-labels-idx1-ubyte.gz
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>Initialized
-step 500  	Train loss  6.75306 	Valid loss 246.894
-step 1000  	Train loss  4.54054 	Valid loss 177.963
-step 1500  	Train loss  3.60605 	Valid loss 146.044
-step 2000  	Train loss  3.12995 	Valid loss 126.56
-step 2500  	Train loss  3.14285 	Valid loss 113.576
-step 3000  	Train loss  2.71379 	Valid loss 104.778
-step 3500  	Train loss  2.40771 	Valid loss 98.5961
-step 4000  	Train loss  2.15804 	Valid loss 93.843
-step 4500  	Train loss  2.13532 	Valid loss 90.1316
-step 5000  	Train loss  2.19076 	Valid loss 87.2048
-step 5500  	Train loss  2.14627 	Valid loss 84.7848
-step 6000  	Train loss  1.88396 	Valid loss 82.6281
-step 6500  	Train loss  1.91025 	Valid loss 80.8797
-step 7000  	Train loss  2.0091 	Valid loss 79.3597
-step 7500  	Train loss  2.07123 	Valid loss 77.9696
-step 8000  	Train loss  1.89105 	Valid loss 76.7654
-step 8500  	Train loss  1.82525 	Valid loss 75.6853
-step 9000  	Train loss  1.86371 	Valid loss 74.6953
-step 9500  	Train loss  1.758 	Valid loss 73.8785
-step 10000  	Train loss  1.65964 	Valid loss 73.0039
-step 10500  	Train loss  1.82475 	Valid loss 72.1971
-step 11000  	Train loss  1.5869 	Valid loss 71.4718
-step 11500  	Train loss  1.87245 	Valid loss 70.9196
-step 12000  	Train loss  1.78571 	Valid loss 70.3109
-step 12500  	Train loss  1.72469 	Valid loss 69.7075
-step 13000  	Train loss  1.51934 	Valid loss 69.108
-step 13500  	Train loss  1.62465 	Valid loss 68.6279
-step 14000  	Train loss  1.51982 	Valid loss 68.1532
-step 14500  	Train loss  1.51431 	Valid loss 67.6496
-step 15000  	Train loss  1.44551 	Valid loss 67.2869
-step 15500  	Train loss  1.53927 	Valid loss 66.8386
-step 16000  	Train loss  1.58811 	Valid loss 66.5481
-step 16500  	Train loss  1.60508 	Valid loss 66.1008
-step 17000  	Train loss  1.67503 	Valid loss 65.7006
-step 17500  	Train loss  1.71895 	Valid loss 65.2957
-step 18000  	Train loss  1.58802 	Valid loss 65.0067
-step 18500  	Train loss  1.60075 	Valid loss 64.6954
-step 19000  	Train loss  1.50392 	Valid loss 64.3582
-step 19500  	Train loss  1.44398 	Valid loss 64.0354
-step 20000  	Train loss  1.44205 	Valid loss 63.7355
-step 20500  	Train loss  1.50613 	Valid loss 63.524
-step 21000  	Train loss  1.43919 	Valid loss 63.2103
-step 21500  	Train loss  1.51228 	Valid loss 62.9497
-step 22000  	Train loss  1.46149 	Valid loss 62.7206
-step 22500  	Train loss  1.48638 	Valid loss 62.4265
-step 23000  	Train loss  1.44892 	Valid loss 62.2331
-step 23500  	Train loss  1.48611 	Valid loss 61.9242
-step 24000  	Train loss  1.54345 	Valid loss 61.7783
-step 24500  	Train loss  1.46778 	Valid loss 61.5381
-step 25000  	Train loss  1.49461 	Valid loss 61.269
-step 25500  	Train loss  1.46838 	Valid loss 61.0583
-step 26000  	Train loss  1.51943 	Valid loss 60.8716
-step 26500  	Train loss  1.51927 	Valid loss 60.669
-step 27000  	Train loss  1.40923 	Valid loss 60.4629
-step 27500  	Train loss  1.43291 	Valid loss 60.295
-step 28000  	Train loss  1.47181 	Valid loss 60.0677
-step 28500  	Train loss  1.50512 	Valid loss 59.9156
-step 29000  	Train loss  1.46755 	Valid loss 59.7623
-step 29500  	Train loss  1.60212 	Valid loss 59.5543
-step 30000  	Train loss  1.52405 	Valid loss 59.3458
-step 30500  	Train loss  1.3129 	Valid loss 59.2203
-step 31000  	Train loss  1.41116 	Valid loss 59.0035
-step 31500  	Train loss  1.3227 	Valid loss 58.9023
-step 32000  	Train loss  1.4634 	Valid loss 58.7118
-step 32500  	Train loss  1.32455 	Valid loss 58.5407
-step 33000  	Train loss  1.39412 	Valid loss 58.3782
-step 33500  	Train loss  1.36567 	Valid loss 58.2424
-step 34000  	Train loss  1.3821 	Valid loss 58.1154
-step 34500  	Train loss  1.34411 	Valid loss 57.9964
-step 35000  	Train loss  1.35022 	Valid loss 57.7748
-step 35500  	Train loss  1.37655 	Valid loss 57.635
-step 36000  	Train loss  1.42441 	Valid loss 57.523
-step 36500  	Train loss  1.34953 	Valid loss 57.3958
-step 37000  	Train loss  1.35628 	Valid loss 57.2177
-step 37500  	Train loss  1.38494 	Valid loss 57.1335
-step 38000  	Train loss  1.35983 	Valid loss 57.01
-step 38500  	Train loss  1.33232 	Valid loss 56.8225
-step 39000  	Train loss  1.35987 	Valid loss 56.7224
-step 39500  	Train loss  1.25505 	Valid loss 56.6011
-step 40000  	Train loss  1.24339 	Valid loss 56.4983
-step 40500  	Train loss  1.363 	Valid loss 56.3592
-step 41000  	Train loss  1.38689 	Valid loss 56.282
-step 41500  	Train loss  1.40985 	Valid loss 56.1267
-step 42000  	Train loss  1.2552 	Valid loss 56.0218
-step 42500  	Train loss  1.35482 	Valid loss 55.8854
-step 43000  	Train loss  1.34297 	Valid loss 55.7717
-step 43500  	Train loss  1.27225 	Valid loss 55.6663
-step 44000  	Train loss  1.28328 	Valid loss 55.5416
-step 44500  	Train loss  1.31093 	Valid loss 55.4187
-step 45000  	Train loss  1.24878 	Valid loss 55.3374
-step 45500  	Train loss  1.46538 	Valid loss 55.2938
-step 46000  	Train loss  1.28744 	Valid loss 55.1794
-step 46500  	Train loss  1.37197 	Valid loss 55.054
-step 47000  	Train loss  1.27841 	Valid loss 54.9615
-step 47500  	Train loss  1.39654 	Valid loss 54.831
-step 48000  	Train loss  1.32185 	Valid loss 54.7564
-step 48500  	Train loss  1.20144 	Valid loss 54.6733
-step 49000  	Train loss  1.2252 	Valid loss 54.5589
-step 49500  	Train loss  1.29636 	Valid loss 54.4832
-step 50000  	Train loss  1.21016 	Valid loss 54.3186
-step 50500  	Train loss  1.37112 	Valid loss 54.2241
-step 51000  	Train loss  1.3098 	Valid loss 54.1238
-step 51500  	Train loss  1.21776 	Valid loss 54.0034
-step 52000  	Train loss  1.32127 	Valid loss 53.9296
-step 52500  	Train loss  1.33366 	Valid loss 53.8371
-step 53000  	Train loss  1.194 	Valid loss 53.7532
-step 53500  	Train loss  1.25576 	Valid loss 53.6669
-step 54000  	Train loss  1.33524 	Valid loss 53.5777
-step 54500  	Train loss  1.23232 	Valid loss 53.5078
-step 55000  	Train loss  1.30329 	Valid loss 53.4136
-step 55500  	Train loss  1.13794 	Valid loss 53.3281
-step 56000  	Train loss  1.20923 	Valid loss 53.2645
-step 56500  	Train loss  1.32719 	Valid loss 53.139
-step 57000  	Train loss  1.26024 	Valid loss 53.0942
-step 57500  	Train loss  1.28224 	Valid loss 52.9481
-step 58000  	Train loss  1.22392 	Valid loss 52.9335
-step 58500  	Train loss  1.29082 	Valid loss 52.8262
-step 59000  	Train loss  1.23016 	Valid loss 52.7457
-step 59500  	Train loss  1.14675 	Valid loss 52.6693
-step 60000  	Train loss  1.37563 	Valid loss 52.5465
-step 60500  	Train loss  1.14597 	Valid loss 52.5353
-step 61000  	Train loss  1.29292 	Valid loss 52.4242
-step 61500  	Train loss  1.28934 	Valid loss 52.408
-step 62000  	Train loss  1.19526 	Valid loss 52.2892
-step 62500  	Train loss  1.19195 	Valid loss 52.224
-step 63000  	Train loss  1.21813 	Valid loss 52.1298
-step 63500  	Train loss  1.19832 	Valid loss 52.1181
-step 64000  	Train loss  1.21937 	Valid loss 52.0056
-step 64500  	Train loss  1.31479 	Valid loss 51.9761
-step 65000  	Train loss  1.22574 	Valid loss 51.873
-step 65500  	Train loss  1.21543 	Valid loss 51.7924
-step 66000  	Train loss  1.16433 	Valid loss 51.7383
-step 66500  	Train loss  1.24552 	Valid loss 51.7018
-step 67000  	Train loss  1.22386 	Valid loss 51.6234
-step 67500  	Train loss  1.17049 	Valid loss 51.587
-step 68000  	Train loss  1.22433 	Valid loss 51.5004
-step 68500  	Train loss  1.22028 	Valid loss 51.3761
-step 69000  	Train loss  1.24374 	Valid loss 51.3944
-Looking for better validation now...
-step 69001  	Train loss  1.20702 	Valid loss 51.4076
-step 69002  	Train loss  1.25013 	Valid loss 51.4663
-step 69003  	Train loss  1.28741 	Valid loss 51.4725
-step 69004  	Train loss  1.21882 	Valid loss 51.4526
-step 69005  	Train loss  1.15431 	Valid loss 51.4422
-step 69006  	Train loss  1.16447 	Valid loss 51.4411
-step 69007  	Train loss  1.19211 	Valid loss 51.3891
-step 69008  	Train loss  1.3399 	Valid loss 51.4614
-step 69009  	Train loss  1.27421 	Valid loss 51.4649
-step 69010  	Train loss  1.15976 	Valid loss 51.4584
-step 69011  	Train loss  1.20374 	Valid loss 51.481
-step 69012  	Train loss  1.17658 	Valid loss 51.4931
-step 69013  	Train loss  1.1574 	Valid loss 51.4703
-step 69014  	Train loss  1.25481 	Valid loss 51.4626
-step 69015  	Train loss  1.0522 	Valid loss 51.4819
-step 69016  	Train loss  1.20957 	Valid loss 51.4871
-step 69017  	Train loss  1.203 	Valid loss 51.4511
-step 69018  	Train loss  1.31957 	Valid loss 51.5037
-step 69019  	Train loss  1.23643 	Valid loss 51.5221
-step 69020  	Train loss  1.29415 	Valid loss 51.5473
-step 69021  	Train loss  1.25549 	Valid loss 51.5266
-step 69022  	Train loss  1.16496 	Valid loss 51.5067
-step 69023  	Train loss  1.21857 	Valid loss 51.5127
-step 69024  	Train loss  1.2265 	Valid loss 51.5449
-step 69025  	Train loss  1.25545 	Valid loss 51.557
-step 69026  	Train loss  1.1759 	Valid loss 51.5494
-step 69027  	Train loss  1.15724 	Valid loss 51.5202
-step 69028  	Train loss  1.20116 	Valid loss 51.4938
-step 69029  	Train loss  1.18607 	Valid loss 51.535
-step 69030  	Train loss  1.254 	Valid loss 51.561
-step 69031  	Train loss  1.11906 	Valid loss 51.5437
-step 69032  	Train loss  1.17453 	Valid loss 51.4975
-step 69033  	Train loss  1.26613 	Valid loss 51.5557
-step 69034  	Train loss  1.19529 	Valid loss 51.588
-step 69035  	Train loss  1.18878 	Valid loss 51.5537
-step 69036  	Train loss  1.1942 	Valid loss 51.5253
-step 69037  	Train loss  1.27931 	Valid loss 51.5356
-step 69038  	Train loss  1.22806 	Valid loss 51.5475
-step 69039  	Train loss  1.15449 	Valid loss 51.5339
-step 69040  	Train loss  1.09322 	Valid loss 51.574
-step 69041  	Train loss  1.18013 	Valid loss 51.5309
-step 69042  	Train loss  1.27617 	Valid loss 51.5066
-step 69043  	Train loss  1.17297 	Valid loss 51.4915
-step 69044  	Train loss  1.16599 	Valid loss 51.4727
-step 69045  	Train loss  1.17762 	Valid loss 51.4949
-step 69046  	Train loss  1.22049 	Valid loss 51.5177
-step 69047  	Train loss  1.15893 	Valid loss 51.521
-step 69048  	Train loss  1.15172 	Valid loss 51.5004
-step 69049  	Train loss  1.16726 	Valid loss 51.5056
-step 69050  	Train loss  1.12349 	Valid loss 51.5467
-step 69051  	Train loss  1.31962 	Valid loss 51.5238
-step 69052  	Train loss  1.30581 	Valid loss 51.528
-step 69053  	Train loss  1.25716 	Valid loss 51.5594
-step 69054  	Train loss  1.28154 	Valid loss 51.5763
-step 69055  	Train loss  1.25479 	Valid loss 51.5979
-step 69056  	Train loss  1.23575 	Valid loss 51.5923
-step 69057  	Train loss  1.22614 	Valid loss 51.5206
-step 69058  	Train loss  1.22164 	Valid loss 51.5335
-step 69059  	Train loss  1.19188 	Valid loss 51.5372
-step 69060  	Train loss  1.22674 	Valid loss 51.5552
-step 69061  	Train loss  1.25031 	Valid loss 51.5453
-step 69062  	Train loss  1.12384 	Valid loss 51.5763
-step 69063  	Train loss  1.26387 	Valid loss 51.5152
-step 69064  	Train loss  1.18843 	Valid loss 51.5419
-step 69065  	Train loss  1.27244 	Valid loss 51.5179
-step 69066  	Train loss  1.21461 	Valid loss 51.5226
-step 69067  	Train loss  1.24203 	Valid loss 51.5704
-step 69068  	Train loss  1.26986 	Valid loss 51.5854
-step 69069  	Train loss  1.14585 	Valid loss 51.5589
-step 69070  	Train loss  1.28337 	Valid loss 51.5915
-step 69071  	Train loss  1.2936 	Valid loss 51.5412
-step 69072  	Train loss  1.13106 	Valid loss 51.5698
-step 69073  	Train loss  1.19011 	Valid loss 51.6227
-step 69074  	Train loss  1.15903 	Valid loss 51.5672
-step 69075  	Train loss  1.13518 	Valid loss 51.5289
-step 69076  	Train loss  1.20018 	Valid loss 51.5112
-step 69077  	Train loss  1.21159 	Valid loss 51.5496
-step 69078  	Train loss  1.32086 	Valid loss 51.5239
-step 69079  	Train loss  1.30736 	Valid loss 51.5875
-step 69080  	Train loss  1.27475 	Valid loss 51.625
-step 69081  	Train loss  1.22378 	Valid loss 51.6096
-step 69082  	Train loss  1.25551 	Valid loss 51.5788
-step 69083  	Train loss  1.23217 	Valid loss 51.5771
-step 69084  	Train loss  1.21908 	Valid loss 51.562
-step 69085  	Train loss  1.20219 	Valid loss 51.5212
-step 69086  	Train loss  1.1922 	Valid loss 51.4984
-step 69087  	Train loss  1.25116 	Valid loss 51.5417
-step 69088  	Train loss  1.18878 	Valid loss 51.5808
-step 69089  	Train loss  1.12783 	Valid loss 51.5596
-step 69090  	Train loss  1.11373 	Valid loss 51.5216
-step 69091  	Train loss  1.20833 	Valid loss 51.5545
-step 69092  	Train loss  1.21984 	Valid loss 51.5841
-step 69093  	Train loss  1.12865 	Valid loss 51.5646
-step 69094  	Train loss  1.21229 	Valid loss 51.5425
-step 69095  	Train loss  1.25187 	Valid loss 51.5524
-step 69096  	Train loss  1.18827 	Valid loss 51.5205
-step 69097  	Train loss  1.29342 	Valid loss 51.5388
-step 69098  	Train loss  1.24835 	Valid loss 51.5232
-step 69099  	Train loss  1.12395 	Valid loss 51.4896
-step 69100  	Train loss  1.33904 	Valid loss 51.4887
-step 69101  	Train loss  1.30498 	Valid loss 51.523
 </pre>
+</div>
+</div>
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_text output_error">
+<pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">ValueError</span>                                Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-21-73d288cf9302&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">     22</span>                                                   <span class="ansi-blue-fg">[</span>optimizer<span class="ansi-blue-fg">,</span> loss<span class="ansi-blue-fg">,</span> learning_rate<span class="ansi-blue-fg">,</span> weights_hidden1<span class="ansi-blue-fg">,</span> biases_hidden1<span class="ansi-blue-fg">,</span> biases<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">     23</span>                                                   feed_dict=feed_dict)
+<span class="ansi-green-fg">---&gt; 24</span><span class="ansi-red-fg">         </span>_<span class="ansi-blue-fg">,</span> l<span class="ansi-blue-fg">,</span> learn_rate<span class="ansi-blue-fg">,</span> model <span class="ansi-blue-fg">=</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">2</span><span class="ansi-blue-fg">:</span><span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">     25</span>         <span class="ansi-green-fg">if</span> step<span class="ansi-blue-fg">%</span><span class="ansi-cyan-fg">100000</span> <span class="ansi-blue-fg">==</span> <span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">     26</span>             save_model<span class="ansi-blue-fg">(</span>model<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">&#39;model&#39;</span><span class="ansi-blue-fg">,</span> step<span class="ansi-blue-fg">)</span>
+
+<span class="ansi-red-fg">ValueError</span>: need more than 3 values to unpack</pre>
 </div>
 </div>
 
