@@ -105,7 +105,7 @@ nHidden = 196
 image_size = 28
 batch_size = 128
 
-start_model = load_model('model414000.pkl')
+start_model = _no_value
 sparse = False
 batch_size, input_size, nHidden, valid_batch = (batch_size, image_size*image_size, 
                                                                          nHidden, 
@@ -171,10 +171,23 @@ with graph.as_default():
         tf.constant(float(batch_size)))
 
 
+# In[ ]:
+
+def stopping_criterion(curr_valid, best_valid):
+    if curr_valid[0] < best_valid[0]:
+        False
+    else:
+        if curr_valid[1] > best_valid[1]+500:
+            True
+        else:
+            False
+
+
 # In[8]:
 
 step = 0
 verify_validation = False, 1, 1
+best_validation = 10000, 0, start_model
 with tf.Session(graph=graph) as session:
     tf.initialize_all_variables().run()
     print("Initialized")
@@ -182,7 +195,6 @@ with tf.Session(graph=graph) as session:
     # Prepare a dictionary telling the session where to feed the minibatch.
     # The key of the dictionary is the placeholder node of the graph to be fed,
     # and the value is the numpy array to feed to it.
-    v_l = 20000
     while True:
         step += 1
         # Pick an offset within the training data, which has been randomized.
@@ -194,38 +206,26 @@ with tf.Session(graph=graph) as session:
         # and the value is the numpy array to feed to it.
         feed_dict = {tf_train_dataset: batch_data}
         out = session.run(
-                                                  [optimizer, loss, weights_hidden1, biases_hidden1, biases], 
+                                                  [optimizer, loss, learning_rate, weights_hidden1, biases_hidden1, biases], 
                                                   feed_dict=feed_dict)
-        _, l, model = out[0], out[1], out[2:]
+        _, l, learn_rate, model = out[0], out[1], out[2:]
         if step%100000 == 0:
             save_model(model, 'model', step)
 
-        if verify_validation[0]:
-            _, l, v_l, valid_out_data = session.run(
+        _, l, v_l, valid_out_data = session.run(
                                     [optimizer, loss, valid_loss, valid_output_units],
                                             feed_dict=feed_dict)
-            print("step", step, " \tTrain loss ", l, "\tValid loss", v_l)
-            if v_l < verify_validation[0]:
-                    save_model(model, 'model', step)
-                    print("Found better validation. Looking for better...")
-                    if step < verify_validation[2]+100:
-                        verify_validation = True, v_l, step
-                    else:
-                        verify_validation = False, v_l, step
-            if step > verify_validation[2]+100:
-                save_model(model, 'model', step)
-                break
+        
+        if stopping_criterion((v_l, step, model), best_validation):
+            save_model(best_validation[2], 'model', best_validation[1])
+            break
         else:
-            if step%500 == 0:
-                prev_v_l = v_l
-                _, l, v_l, valid_out_data = session.run(
-                                                [optimizer, loss, valid_loss, valid_output_units],
-                                                feed_dict=feed_dict)
-                print("step", step, " \tTrain loss ", l, "\tValid loss", v_l)
-                if prev_v_l < v_l:
-                    save_model(model, 'model', step)
-                    print("Looking for better validation now...")
-                    verify_validation = True, v_l, step
+            if v_l < best_validation[0]:
+                best_validation = (v_l, step, model)
+            
+        if step%500 == 0:
+            print("step", step, " \tTrain loss ", l, "\tValid loss", v_l, "\tLearning Rate", learn_rate)
+           
 
 
 # In[4]:

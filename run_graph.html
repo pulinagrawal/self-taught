@@ -11958,7 +11958,7 @@ Extracting t10k-labels-idx1-ubyte.gz
 <span class="n">image_size</span> <span class="o">=</span> <span class="mi">28</span>
 <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">128</span>
 
-<span class="n">start_model</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span><span class="s1">&#39;model414000.pkl&#39;</span><span class="p">)</span>
+<span class="n">start_model</span> <span class="o">=</span> <span class="n">_no_value</span>
 <span class="n">sparse</span> <span class="o">=</span> <span class="bp">False</span>
 <span class="n">batch_size</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="n">nHidden</span><span class="p">,</span> <span class="n">valid_batch</span> <span class="o">=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">image_size</span><span class="o">*</span><span class="n">image_size</span><span class="p">,</span> 
                                                                          <span class="n">nHidden</span><span class="p">,</span> 
@@ -12031,11 +12031,32 @@ Extracting t10k-labels-idx1-ubyte.gz
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="k">def</span> <span class="nf">stopping_criterion</span><span class="p">(</span><span class="n">curr_valid</span><span class="p">,</span> <span class="n">best_valid</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">curr_valid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">best_valid</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="bp">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">curr_valid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">best_valid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">500</span><span class="p">:</span>
+            <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">False</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
 <div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">verify_validation</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+<span class="n">best_validation</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">start_model</span>
 <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">graph</span><span class="o">=</span><span class="n">graph</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
     <span class="n">tf</span><span class="o">.</span><span class="n">initialize_all_variables</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
     <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Initialized&quot;</span><span class="p">)</span>
@@ -12043,7 +12064,6 @@ Extracting t10k-labels-idx1-ubyte.gz
     <span class="c1"># Prepare a dictionary telling the session where to feed the minibatch.</span>
     <span class="c1"># The key of the dictionary is the placeholder node of the graph to be fed,</span>
     <span class="c1"># and the value is the numpy array to feed to it.</span>
-    <span class="n">v_l</span> <span class="o">=</span> <span class="mi">20000</span>
     <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
         <span class="n">step</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="c1"># Pick an offset within the training data, which has been randomized.</span>
@@ -12055,38 +12075,26 @@ Extracting t10k-labels-idx1-ubyte.gz
         <span class="c1"># and the value is the numpy array to feed to it.</span>
         <span class="n">feed_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">tf_train_dataset</span><span class="p">:</span> <span class="n">batch_data</span><span class="p">}</span>
         <span class="n">out</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-                                                  <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">weights_hidden1</span><span class="p">,</span> <span class="n">biases_hidden1</span><span class="p">,</span> <span class="n">biases</span><span class="p">],</span> 
+                                                  <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">weights_hidden1</span><span class="p">,</span> <span class="n">biases_hidden1</span><span class="p">,</span> <span class="n">biases</span><span class="p">],</span> 
                                                   <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">learn_rate</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
         <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">100000</span> == 0:
             <span class="n">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">verify_validation</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
                                     <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">valid_loss</span><span class="p">,</span> <span class="n">valid_output_units</span><span class="p">],</span>
                                             <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
-            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="s2">&quot; </span><span class="se">\t</span><span class="s2">Train loss &quot;</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Valid loss&quot;</span><span class="p">,</span> <span class="n">v_l</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">v_l</span> <span class="o">&lt;</span> <span class="n">verify_validation</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-                    <span class="n">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
-                    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Found better validation. Looking for better...&quot;</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">step</span> <span class="o">&lt;</span> <span class="n">verify_validation</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mi">100</span><span class="p">:</span>
-                        <span class="n">verify_validation</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">step</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">verify_validation</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">step</span>
-            <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;</span> <span class="n">verify_validation</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mi">100</span><span class="p">:</span>
-                <span class="n">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
-                <span class="k">break</span>
+        
+        <span class="k">if</span> <span class="n">stopping_criterion</span><span class="p">((</span><span class="n">v_l</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span> <span class="n">best_validation</span><span class="p">):</span>
+            <span class="n">save_model</span><span class="p">(</span><span class="n">best_validation</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">best_validation</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">break</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">500</span> == 0:
-                <span class="n">prev_v_l</span> <span class="o">=</span> <span class="n">v_l</span>
-                <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-                                                <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">valid_loss</span><span class="p">,</span> <span class="n">valid_output_units</span><span class="p">],</span>
-                                                <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
-                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="s2">&quot; </span><span class="se">\t</span><span class="s2">Train loss &quot;</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Valid loss&quot;</span><span class="p">,</span> <span class="n">v_l</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">prev_v_l</span> <span class="o">&lt;</span> <span class="n">v_l</span><span class="p">:</span>
-                    <span class="n">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
-                    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Looking for better validation now...&quot;</span><span class="p">)</span>
-                    <span class="n">verify_validation</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">step</span>
+            <span class="k">if</span> <span class="n">v_l</span> <span class="o">&lt;</span> <span class="n">best_validation</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">best_validation</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_l</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+            
+        <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">500</span> == 0:
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="s2">&quot; </span><span class="se">\t</span><span class="s2">Train loss &quot;</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Valid loss&quot;</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Learning Rate&quot;</span><span class="p">,</span> <span class="n">learn_rate</span><span class="p">)</span>
+           
 </pre></div>
 
 </div>
