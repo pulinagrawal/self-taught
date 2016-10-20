@@ -183,11 +183,13 @@ def stopping_criterion(curr_valid, best_valid):
             False
 
 
-# In[21]:
+# In[25]:
 
 step = 0
 verify_validation = False, 1, 1
+v_l = 20000
 best_validation = 10000, 0, start_model
+strict_checking 
 with tf.Session(graph=graph) as session:
     tf.initialize_all_variables().run()
     print("Initialized")
@@ -208,11 +210,22 @@ with tf.Session(graph=graph) as session:
         out = session.run(
                                                   [optimizer, loss, learning_rate, weights_hidden1, biases_hidden1, biases], 
                                                   feed_dict=feed_dict)
-        _, l, learn_rate, model = out[0], out[1], out[2] out[3:]
+        _, l, learn_rate, model = out[0], out[1], out[2], out[3:]
         if step%100000 == 0:
             save_model(model, 'model', step)
 
-        _, l, v_l, valid_out_data = session.run(
+            
+        if step%500 == 0:
+            prev_v_l = v_l
+            _, l, v_l, valid_out_data = session.run(
+                                    [optimizer, loss, valid_loss, valid_output_units],
+                                            feed_dict=feed_dict)
+            print("step", step, " \tTrain loss ", l, "\tValid loss", v_l, "\tLearning Rate", learn_rate)
+            if v_l > prev_v_l:
+                strict_checking = True
+           
+        if strict_checking:
+            _, l, v_l, valid_out_data = session.run(
                                     [optimizer, loss, valid_loss, valid_output_units],
                                             feed_dict=feed_dict)
         
@@ -222,10 +235,6 @@ with tf.Session(graph=graph) as session:
         else:
             if v_l < best_validation[0]:
                 best_validation = (v_l, step, model)
-            
-        if step%500 == 0:
-            print("step", step, " \tTrain loss ", l, "\tValid loss", v_l, "\tLearning Rate", learn_rate)
-           
 
 
 # In[4]:

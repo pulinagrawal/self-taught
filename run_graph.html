@@ -12051,12 +12051,14 @@ Extracting t10k-labels-idx1-ubyte.gz
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[21]:</div>
+<div class="prompt input_prompt">In&nbsp;[25]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">verify_validation</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+<span class="n">v_l</span> <span class="o">=</span> <span class="mi">20000</span>
 <span class="n">best_validation</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">start_model</span>
+<span class="n">strict_checking</span> 
 <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">graph</span><span class="o">=</span><span class="n">graph</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
     <span class="n">tf</span><span class="o">.</span><span class="n">initialize_all_variables</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
     <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Initialized&quot;</span><span class="p">)</span>
@@ -12077,11 +12079,22 @@ Extracting t10k-labels-idx1-ubyte.gz
         <span class="n">out</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
                                                   <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">weights_hidden1</span><span class="p">,</span> <span class="n">biases_hidden1</span><span class="p">,</span> <span class="n">biases</span><span class="p">],</span> 
                                                   <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">learn_rate</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="n">out</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">learn_rate</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
         <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">100000</span> == 0:
             <span class="n">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
 
-        <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            
+        <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">500</span> == 0:
+            <span class="n">prev_v_l</span> <span class="o">=</span> <span class="n">v_l</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                                    <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">valid_loss</span><span class="p">,</span> <span class="n">valid_output_units</span><span class="p">],</span>
+                                            <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="s2">&quot; </span><span class="se">\t</span><span class="s2">Train loss &quot;</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Valid loss&quot;</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Learning Rate&quot;</span><span class="p">,</span> <span class="n">learn_rate</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">v_l</span> <span class="o">&gt;</span> <span class="n">prev_v_l</span><span class="p">:</span>
+                <span class="n">strict_checking</span> <span class="o">=</span> <span class="bp">True</span>
+           
+        <span class="k">if</span> <span class="n">strict_checking</span><span class="p">:</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
                                     <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">valid_loss</span><span class="p">,</span> <span class="n">valid_output_units</span><span class="p">],</span>
                                             <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
         
@@ -12091,10 +12104,6 @@ Extracting t10k-labels-idx1-ubyte.gz
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">v_l</span> <span class="o">&lt;</span> <span class="n">best_validation</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
                 <span class="n">best_validation</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_l</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-            
-        <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">500</span> == 0:
-            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="s2">&quot; </span><span class="se">\t</span><span class="s2">Train loss &quot;</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Valid loss&quot;</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Learning Rate&quot;</span><span class="p">,</span> <span class="n">learn_rate</span><span class="p">)</span>
-           
 </pre></div>
 
 </div>
@@ -12116,15 +12125,15 @@ Extracting t10k-labels-idx1-ubyte.gz
 <div class="output_subarea output_text output_error">
 <pre>
 <span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">ValueError</span>                                Traceback (most recent call last)
-<span class="ansi-green-fg">&lt;ipython-input-21-73d288cf9302&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
-<span class="ansi-green-intense-fg ansi-bold">     22</span>                                                   <span class="ansi-blue-fg">[</span>optimizer<span class="ansi-blue-fg">,</span> loss<span class="ansi-blue-fg">,</span> learning_rate<span class="ansi-blue-fg">,</span> weights_hidden1<span class="ansi-blue-fg">,</span> biases_hidden1<span class="ansi-blue-fg">,</span> biases<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span>
-<span class="ansi-green-intense-fg ansi-bold">     23</span>                                                   feed_dict=feed_dict)
-<span class="ansi-green-fg">---&gt; 24</span><span class="ansi-red-fg">         </span>_<span class="ansi-blue-fg">,</span> l<span class="ansi-blue-fg">,</span> learn_rate<span class="ansi-blue-fg">,</span> model <span class="ansi-blue-fg">=</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">2</span><span class="ansi-blue-fg">:</span><span class="ansi-blue-fg">]</span>
-<span class="ansi-green-intense-fg ansi-bold">     25</span>         <span class="ansi-green-fg">if</span> step<span class="ansi-blue-fg">%</span><span class="ansi-cyan-fg">100000</span> <span class="ansi-blue-fg">==</span> <span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-intense-fg ansi-bold">     26</span>             save_model<span class="ansi-blue-fg">(</span>model<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">&#39;model&#39;</span><span class="ansi-blue-fg">,</span> step<span class="ansi-blue-fg">)</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-25-7f20c4ea6bac&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">     37</span>                 strict_checking <span class="ansi-blue-fg">=</span> True
+<span class="ansi-green-intense-fg ansi-bold">     38</span> 
+<span class="ansi-green-fg">---&gt; 39</span><span class="ansi-red-fg">         </span><span class="ansi-green-fg">if</span> strict_checking<span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">     40</span>             _, l, v_l, valid_out_data = session.run(
+<span class="ansi-green-intense-fg ansi-bold">     41</span>                                     <span class="ansi-blue-fg">[</span>optimizer<span class="ansi-blue-fg">,</span> loss<span class="ansi-blue-fg">,</span> valid_loss<span class="ansi-blue-fg">,</span> valid_output_units<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span>
 
-<span class="ansi-red-fg">ValueError</span>: need more than 3 values to unpack</pre>
+<span class="ansi-red-fg">NameError</span>: name &#39;strict_checking&#39; is not defined</pre>
 </div>
 </div>
 
