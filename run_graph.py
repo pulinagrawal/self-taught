@@ -11,7 +11,7 @@
 # 
 # The goal of this assignment is to train a sparse autoencoder network on MNIST Data and visulize its validation data reconstruction.
 
-# In[12]:
+# In[6]:
 
 # These are all the modules we'll be using later. Make sure you can import them
 # before proceeding further.
@@ -26,7 +26,7 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.examples.tutorials.mnist import input_data
 
 
-# In[13]:
+# In[7]:
 
 
 class NoValue:
@@ -39,7 +39,7 @@ _no_value = NoValue()
 
 
 
-# In[14]:
+# In[8]:
 
 def reformat(labels):
     # Map 0 to [1.0, 0.0, 0.0 ...], 1 to [0.0, 1.0, 0.0 ...]
@@ -70,21 +70,18 @@ def load_model(filename):
 
 # First we load the MNIST data
 
-# In[15]:
+# In[9]:
 
-data_set = input_data.read_data_sets('', False)
+get_ipython().magic(u'pinfo2 input_data.read_data_sets')
+
+
+# ##### Self data extracted but never used.
+
+# In[10]:
+
+data_set, self_data = input_data.read_data_sets('', False)
 training_data = data_set.train
 testing_data = data_set.test
-
-
-# Checking  the data
-
-# In[16]:
-
-images_feed, labels_feed = training_data.next_batch(10000, False)
-image_size = 28
-num_labels = 10
-np.min(images_feed)
 
 
 # Do validation testing:
@@ -183,16 +180,68 @@ def stopping_criterion(curr_valid, best_valid):
             False
 
 
-# In[25]:
+# In[26]:
 
-step = 0
-verify_validation = False, 1, 1
-v_l = 20000
-best_validation = 10000, 0, start_model
-strict_checking 
+
 with tf.Session(graph=graph) as session:
     tf.initialize_all_variables().run()
+    step = 0
+    verify_validation = False, 1, 1
+    v_l = 20000
+    best_validation = 10000, 0, start_model
+    strict_checking = False
+    
     print("Initialized")
+    batch_data, _ = self_data.next_batch(batch_size)
+    # Prepare a dictionary telling the session where to feed the minibatch.
+    # The key of the dictionary is the placeholder node of the graph to be fed,
+    # and the value is the numpy array to feed to it.
+    while True:
+        step += 1
+        # Pick an offset within the training data, which has been randomized.
+        # Note: we could use better randomization across epochs.
+        # Generate a minibatch.
+        batch_data, _ = self_data.next_batch(batch_size)
+        # Prepare a dictionary telling the session where to feed the minibatch.
+        # The key of the dictionary is the placeholder node of the graph to be fed,
+        # and the value is the numpy array to feed to it.
+        feed_dict = {tf_train_dataset: batch_data}
+        out = session.run(
+                                                  [optimizer, loss, learning_rate, weights_hidden1, biases_hidden1, biases], 
+                                                  feed_dict=feed_dict)
+        _, l, learn_rate, model = out[0], out[1], out[2], out[3:]
+        if step%100000 == 0:
+            save_model(model, 'model-self', step)
+
+            
+        if step%500 == 0:
+            prev_v_l = v_l
+            _, l, v_l, valid_out_data = session.run(
+                                    [optimizer, loss, valid_loss, valid_output_units],
+                                            feed_dict=feed_dict)
+            print("step", step, " \tTrain loss ", l, "\tValid loss", v_l, "\tLearning Rate", learn_rate)
+            if v_l > prev_v_l:
+                strict_checking = True
+           
+        if strict_checking:
+            _, l, v_l, valid_out_data = session.run(
+                                    [optimizer, loss, valid_loss, valid_output_units],
+                                            feed_dict=feed_dict)
+        
+            if stopping_criterion((v_l, step, model), best_validation):
+                save_model(best_validation[2], 'model-self', best_validation[1])
+                break
+            else:
+                if v_l < best_validation[0]:
+                    best_validation = (v_l, step, model)
+    
+    print("Tuning")
+    step = 0
+    verify_validation = False, 1, 1
+    v_l = 20000
+    best_validation = 10000, 0, start_model
+    strict_checking = False
+    
     batch_data, _ = training_data.next_batch(batch_size)
     # Prepare a dictionary telling the session where to feed the minibatch.
     # The key of the dictionary is the placeholder node of the graph to be fed,
@@ -212,7 +261,7 @@ with tf.Session(graph=graph) as session:
                                                   feed_dict=feed_dict)
         _, l, learn_rate, model = out[0], out[1], out[2], out[3:]
         if step%100000 == 0:
-            save_model(model, 'model', step)
+            save_model(model, 'model-tuning', step)
 
             
         if step%500 == 0:
@@ -229,12 +278,12 @@ with tf.Session(graph=graph) as session:
                                     [optimizer, loss, valid_loss, valid_output_units],
                                             feed_dict=feed_dict)
         
-        if stopping_criterion((v_l, step, model), best_validation):
-            save_model(best_validation[2], 'model', best_validation[1])
-            break
-        else:
-            if v_l < best_validation[0]:
-                best_validation = (v_l, step, model)
+            if stopping_criterion((v_l, step, model), best_validation):
+                save_model(best_validation[2], 'model-tuning', best_validation[1])
+                break
+            else:
+                if v_l < best_validation[0]:
+                    best_validation = (v_l, step, model)
 
 
 # In[4]:

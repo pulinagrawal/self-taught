@@ -11759,7 +11759,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># These are all the modules we&#39;ll be using later. Make sure you can import them</span>
@@ -11782,7 +11782,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="k">class</span> <span class="nc">NoValue</span><span class="p">:</span>
@@ -11801,7 +11801,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="k">def</span> <span class="nf">reformat</span><span class="p">(</span><span class="n">labels</span><span class="p">):</span>
@@ -11848,10 +11848,32 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span></span><span class="n">data_set</span> <span class="o">=</span> <span class="n">input_data</span><span class="o">.</span><span class="n">read_data_sets</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+<div class=" highlight hl-ipython2"><pre><span></span>input_data.read_data_sets<span class="o">??</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Self-data-extracted-but-never-used.">Self data extracted but never used.<a class="anchor-link" href="#Self-data-extracted-but-never-used.">&#182;</a></h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">data_set</span><span class="p">,</span> <span class="n">self_data</span> <span class="o">=</span> <span class="n">input_data</span><span class="o">.</span><span class="n">read_data_sets</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
 <span class="n">training_data</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">train</span>
 <span class="n">testing_data</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">test</span>
 </pre></div>
@@ -11872,48 +11894,6 @@ Extracting t10k-images-idx3-ubyte.gz
 Extracting t10k-labels-idx1-ubyte.gz
 </pre>
 </div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Checking  the data</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span></span><span class="n">images_feed</span><span class="p">,</span> <span class="n">labels_feed</span> <span class="o">=</span> <span class="n">training_data</span><span class="o">.</span><span class="n">next_batch</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
-<span class="n">image_size</span> <span class="o">=</span> <span class="mi">28</span>
-<span class="n">num_labels</span> <span class="o">=</span> <span class="mi">10</span>
-<span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">images_feed</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area"><div class="prompt output_prompt">Out[16]:</div>
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>0.0</pre>
-</div>
-
 </div>
 
 </div>
@@ -12051,17 +12031,68 @@ Extracting t10k-labels-idx1-ubyte.gz
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[25]:</div>
+<div class="prompt input_prompt">In&nbsp;[26]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span></span><span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">verify_validation</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
-<span class="n">v_l</span> <span class="o">=</span> <span class="mi">20000</span>
-<span class="n">best_validation</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">start_model</span>
-<span class="n">strict_checking</span> 
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">graph</span><span class="o">=</span><span class="n">graph</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+<div class=" highlight hl-ipython2"><pre><span></span><span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">graph</span><span class="o">=</span><span class="n">graph</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
     <span class="n">tf</span><span class="o">.</span><span class="n">initialize_all_variables</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">verify_validation</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+    <span class="n">v_l</span> <span class="o">=</span> <span class="mi">20000</span>
+    <span class="n">best_validation</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">start_model</span>
+    <span class="n">strict_checking</span> <span class="o">=</span> <span class="bp">False</span>
+    
     <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Initialized&quot;</span><span class="p">)</span>
+    <span class="n">batch_data</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">self_data</span><span class="o">.</span><span class="n">next_batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+    <span class="c1"># Prepare a dictionary telling the session where to feed the minibatch.</span>
+    <span class="c1"># The key of the dictionary is the placeholder node of the graph to be fed,</span>
+    <span class="c1"># and the value is the numpy array to feed to it.</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="n">step</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1"># Pick an offset within the training data, which has been randomized.</span>
+        <span class="c1"># Note: we could use better randomization across epochs.</span>
+        <span class="c1"># Generate a minibatch.</span>
+        <span class="n">batch_data</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">self_data</span><span class="o">.</span><span class="n">next_batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+        <span class="c1"># Prepare a dictionary telling the session where to feed the minibatch.</span>
+        <span class="c1"># The key of the dictionary is the placeholder node of the graph to be fed,</span>
+        <span class="c1"># and the value is the numpy array to feed to it.</span>
+        <span class="n">feed_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">tf_train_dataset</span><span class="p">:</span> <span class="n">batch_data</span><span class="p">}</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                                                  <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">weights_hidden1</span><span class="p">,</span> <span class="n">biases_hidden1</span><span class="p">,</span> <span class="n">biases</span><span class="p">],</span> 
+                                                  <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">learn_rate</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
+        <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">100000</span> == 0:
+            <span class="n">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;model-self&#39;</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+
+            
+        <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">500</span> == 0:
+            <span class="n">prev_v_l</span> <span class="o">=</span> <span class="n">v_l</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                                    <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">valid_loss</span><span class="p">,</span> <span class="n">valid_output_units</span><span class="p">],</span>
+                                            <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="s2">&quot; </span><span class="se">\t</span><span class="s2">Train loss &quot;</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Valid loss&quot;</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Learning Rate&quot;</span><span class="p">,</span> <span class="n">learn_rate</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">v_l</span> <span class="o">&gt;</span> <span class="n">prev_v_l</span><span class="p">:</span>
+                <span class="n">strict_checking</span> <span class="o">=</span> <span class="bp">True</span>
+           
+        <span class="k">if</span> <span class="n">strict_checking</span><span class="p">:</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">v_l</span><span class="p">,</span> <span class="n">valid_out_data</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                                    <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">valid_loss</span><span class="p">,</span> <span class="n">valid_output_units</span><span class="p">],</span>
+                                            <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
+        
+            <span class="k">if</span> <span class="n">stopping_criterion</span><span class="p">((</span><span class="n">v_l</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span> <span class="n">best_validation</span><span class="p">):</span>
+                <span class="n">save_model</span><span class="p">(</span><span class="n">best_validation</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">&#39;model-self&#39;</span><span class="p">,</span> <span class="n">best_validation</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">v_l</span> <span class="o">&lt;</span> <span class="n">best_validation</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">best_validation</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_l</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+    
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Tuning&quot;</span><span class="p">)</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">verify_validation</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+    <span class="n">v_l</span> <span class="o">=</span> <span class="mi">20000</span>
+    <span class="n">best_validation</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">start_model</span>
+    <span class="n">strict_checking</span> <span class="o">=</span> <span class="bp">False</span>
+    
     <span class="n">batch_data</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">training_data</span><span class="o">.</span><span class="n">next_batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
     <span class="c1"># Prepare a dictionary telling the session where to feed the minibatch.</span>
     <span class="c1"># The key of the dictionary is the placeholder node of the graph to be fed,</span>
@@ -12081,7 +12112,7 @@ Extracting t10k-labels-idx1-ubyte.gz
                                                   <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">learn_rate</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">out</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
         <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">100000</span> == 0:
-            <span class="n">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+            <span class="n">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;model-tuning&#39;</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
 
             
         <span class="k">if</span> <span class="n">step</span><span class="o">%</span><span class="k">500</span> == 0:
@@ -12098,12 +12129,12 @@ Extracting t10k-labels-idx1-ubyte.gz
                                     <span class="p">[</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">valid_loss</span><span class="p">,</span> <span class="n">valid_output_units</span><span class="p">],</span>
                                             <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
         
-        <span class="k">if</span> <span class="n">stopping_criterion</span><span class="p">((</span><span class="n">v_l</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span> <span class="n">best_validation</span><span class="p">):</span>
-            <span class="n">save_model</span><span class="p">(</span><span class="n">best_validation</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">best_validation</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-            <span class="k">break</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">v_l</span> <span class="o">&lt;</span> <span class="n">best_validation</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-                <span class="n">best_validation</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_l</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">stopping_criterion</span><span class="p">((</span><span class="n">v_l</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span> <span class="n">best_validation</span><span class="p">):</span>
+                <span class="n">save_model</span><span class="p">(</span><span class="n">best_validation</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">&#39;model-tuning&#39;</span><span class="p">,</span> <span class="n">best_validation</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">v_l</span> <span class="o">&lt;</span> <span class="n">best_validation</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">best_validation</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_l</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12125,15 +12156,50 @@ Extracting t10k-labels-idx1-ubyte.gz
 <div class="output_subarea output_text output_error">
 <pre>
 <span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
-<span class="ansi-green-fg">&lt;ipython-input-25-7f20c4ea6bac&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
-<span class="ansi-green-intense-fg ansi-bold">     37</span>                 strict_checking <span class="ansi-blue-fg">=</span> True
-<span class="ansi-green-intense-fg ansi-bold">     38</span> 
-<span class="ansi-green-fg">---&gt; 39</span><span class="ansi-red-fg">         </span><span class="ansi-green-fg">if</span> strict_checking<span class="ansi-blue-fg">:</span>
-<span class="ansi-green-intense-fg ansi-bold">     40</span>             _, l, v_l, valid_out_data = session.run(
-<span class="ansi-green-intense-fg ansi-bold">     41</span>                                     <span class="ansi-blue-fg">[</span>optimizer<span class="ansi-blue-fg">,</span> loss<span class="ansi-blue-fg">,</span> valid_loss<span class="ansi-blue-fg">,</span> valid_output_units<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span>
+<span class="ansi-red-fg">KeyboardInterrupt</span>                         Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-26-6548dbd05b57&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">     23</span>         out = session.run(
+<span class="ansi-green-intense-fg ansi-bold">     24</span>                                                   <span class="ansi-blue-fg">[</span>optimizer<span class="ansi-blue-fg">,</span> loss<span class="ansi-blue-fg">,</span> learning_rate<span class="ansi-blue-fg">,</span> weights_hidden1<span class="ansi-blue-fg">,</span> biases_hidden1<span class="ansi-blue-fg">,</span> biases<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span>
+<span class="ansi-green-fg">---&gt; 25</span><span class="ansi-red-fg">                                                   feed_dict=feed_dict)
+</span><span class="ansi-green-intense-fg ansi-bold">     26</span>         _<span class="ansi-blue-fg">,</span> l<span class="ansi-blue-fg">,</span> learn_rate<span class="ansi-blue-fg">,</span> model <span class="ansi-blue-fg">=</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">2</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> out<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">3</span><span class="ansi-blue-fg">:</span><span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">     27</span>         <span class="ansi-green-fg">if</span> step<span class="ansi-blue-fg">%</span><span class="ansi-cyan-fg">100000</span> <span class="ansi-blue-fg">==</span> <span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">:</span>
 
-<span class="ansi-red-fg">NameError</span>: name &#39;strict_checking&#39; is not defined</pre>
+<span class="ansi-green-fg">/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.pyc</span> in <span class="ansi-cyan-fg">run</span><span class="ansi-blue-fg">(self, fetches, feed_dict, options, run_metadata)</span>
+<span class="ansi-green-intense-fg ansi-bold">    370</span>     <span class="ansi-green-fg">try</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    371</span>       result = self._run(None, fetches, feed_dict, options_ptr,
+<span class="ansi-green-fg">--&gt; 372</span><span class="ansi-red-fg">                          run_metadata_ptr)
+</span><span class="ansi-green-intense-fg ansi-bold">    373</span>       <span class="ansi-green-fg">if</span> run_metadata<span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    374</span>         proto_data <span class="ansi-blue-fg">=</span> tf_session<span class="ansi-blue-fg">.</span>TF_GetBuffer<span class="ansi-blue-fg">(</span>run_metadata_ptr<span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.pyc</span> in <span class="ansi-cyan-fg">_run</span><span class="ansi-blue-fg">(self, handle, fetches, feed_dict, options, run_metadata)</span>
+<span class="ansi-green-intense-fg ansi-bold">    634</span>     <span class="ansi-green-fg">try</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    635</span>       results = self._do_run(handle, target_list, unique_fetches,
+<span class="ansi-green-fg">--&gt; 636</span><span class="ansi-red-fg">                              feed_dict_string, options, run_metadata)
+</span><span class="ansi-green-intense-fg ansi-bold">    637</span>     <span class="ansi-green-fg">finally</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    638</span>       <span class="ansi-red-fg"># The movers are no longer used. Delete them.</span>
+
+<span class="ansi-green-fg">/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.pyc</span> in <span class="ansi-cyan-fg">_do_run</span><span class="ansi-blue-fg">(self, handle, target_list, fetch_list, feed_dict, options, run_metadata)</span>
+<span class="ansi-green-intense-fg ansi-bold">    706</span>     <span class="ansi-green-fg">if</span> handle <span class="ansi-green-fg">is</span> None<span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    707</span>       return self._do_call(_run_fn, self._session, feed_dict, fetch_list,
+<span class="ansi-green-fg">--&gt; 708</span><span class="ansi-red-fg">                            target_list, options, run_metadata)
+</span><span class="ansi-green-intense-fg ansi-bold">    709</span>     <span class="ansi-green-fg">else</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    710</span>       return self._do_call(_prun_fn, self._session, handle, feed_dict,
+
+<span class="ansi-green-fg">/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.pyc</span> in <span class="ansi-cyan-fg">_do_call</span><span class="ansi-blue-fg">(self, fn, *args)</span>
+<span class="ansi-green-intense-fg ansi-bold">    713</span>   <span class="ansi-green-fg">def</span> _do_call<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> fn<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    714</span>     <span class="ansi-green-fg">try</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-fg">--&gt; 715</span><span class="ansi-red-fg">       </span><span class="ansi-green-fg">return</span> fn<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    716</span>     <span class="ansi-green-fg">except</span> errors<span class="ansi-blue-fg">.</span>OpError <span class="ansi-green-fg">as</span> e<span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    717</span>       message <span class="ansi-blue-fg">=</span> compat<span class="ansi-blue-fg">.</span>as_text<span class="ansi-blue-fg">(</span>e<span class="ansi-blue-fg">.</span>message<span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.pyc</span> in <span class="ansi-cyan-fg">_run_fn</span><span class="ansi-blue-fg">(session, feed_dict, fetch_list, target_list, options, run_metadata)</span>
+<span class="ansi-green-intense-fg ansi-bold">    695</span>         return tf_session.TF_Run(session, options,
+<span class="ansi-green-intense-fg ansi-bold">    696</span>                                  feed_dict<span class="ansi-blue-fg">,</span> fetch_list<span class="ansi-blue-fg">,</span> target_list<span class="ansi-blue-fg">,</span>
+<span class="ansi-green-fg">--&gt; 697</span><span class="ansi-red-fg">                                  status, run_metadata)
+</span><span class="ansi-green-intense-fg ansi-bold">    698</span> 
+<span class="ansi-green-intense-fg ansi-bold">    699</span>     <span class="ansi-green-fg">def</span> _prun_fn<span class="ansi-blue-fg">(</span>session<span class="ansi-blue-fg">,</span> handle<span class="ansi-blue-fg">,</span> feed_dict<span class="ansi-blue-fg">,</span> fetch_list<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+
+<span class="ansi-red-fg">KeyboardInterrupt</span>: </pre>
 </div>
 </div>
 
