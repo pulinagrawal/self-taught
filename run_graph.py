@@ -11,7 +11,7 @@
 # 
 # The goal of this assignment is to train a sparse autoencoder network on MNIST Data and visulize its validation data reconstruction.
 
-# In[6]:
+# In[3]:
 
 # These are all the modules we'll be using later. Make sure you can import them
 # before proceeding further.
@@ -22,8 +22,7 @@ import pickle
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
-from tensorflow.examples.tutorials.mnist import input_data
+from mnist import read_data_sets
 
 
 # In[7]:
@@ -70,16 +69,66 @@ def load_model(filename):
 
 # First we load the MNIST data
 
-# In[9]:
+# In[4]:
 
-get_ipython().magic(u'pinfo2 input_data.read_data_sets')
+def read_data_sets(train_dir,
+                   fake_data=False,
+                   one_hot=False,
+                   dtype=dtypes.float32):
+  SOURCE_URL = 'http://yann.lecun.com/exdb/mnist'
+  if fake_data:
+
+    def fake():
+      return DataSet([], [], fake_data=True, one_hot=one_hot, dtype=dtype)
+
+    train = fake()
+    validation = fake()
+    test = fake()
+    return base.Datasets(train=train, validation=validation, test=test)
+
+  TRAIN_IMAGES = 'train-images-idx3-ubyte.gz'
+  TRAIN_LABELS = 'train-labels-idx1-ubyte.gz'
+  TEST_IMAGES = 't10k-images-idx3-ubyte.gz'
+  TEST_LABELS = 't10k-labels-idx1-ubyte.gz'
+  VALIDATION_SIZE = 5000
+  TRAINING_SIZE = 10000
+
+  local_file = base.maybe_download(TRAIN_IMAGES, train_dir,
+                                   SOURCE_URL + TRAIN_IMAGES)
+  train_images = extract_images(local_file)
+
+  local_file = base.maybe_download(TRAIN_LABELS, train_dir,
+                                   SOURCE_URL + TRAIN_LABELS)
+  train_labels = extract_labels(local_file, one_hot=one_hot)
+
+  local_file = base.maybe_download(TEST_IMAGES, train_dir,
+                                   SOURCE_URL + TEST_IMAGES)
+  test_images = extract_images(local_file)
+
+  local_file = base.maybe_download(TEST_LABELS, train_dir,
+                                   SOURCE_URL + TEST_LABELS)
+  test_labels = extract_labels(local_file, one_hot=one_hot)
+
+  validation_images = train_images[:VALIDATION_SIZE]
+  validation_labels = train_labels[:VALIDATION_SIZE]
+  train_images = train_images[VALIDATION_SIZE:TRAINING_SIZE]
+  train_labels = train_labels[VALIDATION_SIZE:TRAINING_SIZE]
+  self_images = train_images[TRAINING_SIZE:]
+  self_labels = train_labels[TRAINING_SIZE:]
+
+  self = DataSet(self_images, self_labels, dtype=dtype)
+  train = DataSet(train_images, train_labels, dtype=dtype)
+  validation = DataSet(validation_images, validation_labels, dtype=dtype)
+  test = DataSet(test_images, test_labels, dtype=dtype)
+
+  return (base.Datasets(train=train, validation=validation, test=test), self)
 
 
 # ##### Self data extracted but never used.
 
-# In[10]:
+# In[26]:
 
-data_set, self_data = input_data.read_data_sets('', False)
+data_set, self_data = read_data_sets('', False)
 training_data = data_set.train
 testing_data = data_set.test
 
@@ -174,7 +223,7 @@ def stopping_criterion(curr_valid, best_valid):
     if curr_valid[0] < best_valid[0]:
         False
     else:
-        if curr_valid[1] > best_valid[1]+500:
+        if curr_valid[1] > best_valid[1]+100:
             True
         else:
             False

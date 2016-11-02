@@ -11759,7 +11759,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># These are all the modules we&#39;ll be using later. Make sure you can import them</span>
@@ -11771,8 +11771,7 @@ div#notebook {
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
-<span class="kn">from</span> <span class="nn">tensorflow.contrib.learn.python.learn.datasets.mnist</span> <span class="kn">import</span> <span class="n">read_data_sets</span>
-<span class="kn">from</span> <span class="nn">tensorflow.examples.tutorials.mnist</span> <span class="kn">import</span> <span class="n">input_data</span>
+<span class="kn">from</span> <span class="nn">mnist</span> <span class="kn">import</span> <span class="n">read_data_sets</span>
 </pre></div>
 
 </div>
@@ -11848,13 +11847,86 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span></span>input_data.read_data_sets<span class="o">??</span>
+<div class=" highlight hl-ipython2"><pre><span></span><span class="k">def</span> <span class="nf">read_data_sets</span><span class="p">(</span><span class="n">train_dir</span><span class="p">,</span>
+                   <span class="n">fake_data</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                   <span class="n">one_hot</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                   <span class="n">dtype</span><span class="o">=</span><span class="n">dtypes</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
+  <span class="n">SOURCE_URL</span> <span class="o">=</span> <span class="s1">&#39;http://yann.lecun.com/exdb/mnist&#39;</span>
+  <span class="k">if</span> <span class="n">fake_data</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">fake</span><span class="p">():</span>
+      <span class="k">return</span> <span class="n">DataSet</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">fake_data</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">one_hot</span><span class="o">=</span><span class="n">one_hot</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="n">train</span> <span class="o">=</span> <span class="n">fake</span><span class="p">()</span>
+    <span class="n">validation</span> <span class="o">=</span> <span class="n">fake</span><span class="p">()</span>
+    <span class="n">test</span> <span class="o">=</span> <span class="n">fake</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">base</span><span class="o">.</span><span class="n">Datasets</span><span class="p">(</span><span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">validation</span><span class="o">=</span><span class="n">validation</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">)</span>
+
+  <span class="n">TRAIN_IMAGES</span> <span class="o">=</span> <span class="s1">&#39;train-images-idx3-ubyte.gz&#39;</span>
+  <span class="n">TRAIN_LABELS</span> <span class="o">=</span> <span class="s1">&#39;train-labels-idx1-ubyte.gz&#39;</span>
+  <span class="n">TEST_IMAGES</span> <span class="o">=</span> <span class="s1">&#39;t10k-images-idx3-ubyte.gz&#39;</span>
+  <span class="n">TEST_LABELS</span> <span class="o">=</span> <span class="s1">&#39;t10k-labels-idx1-ubyte.gz&#39;</span>
+  <span class="n">VALIDATION_SIZE</span> <span class="o">=</span> <span class="mi">5000</span>
+  <span class="n">TRAINING_SIZE</span> <span class="o">=</span> <span class="mi">10000</span>
+
+  <span class="n">local_file</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">maybe_download</span><span class="p">(</span><span class="n">TRAIN_IMAGES</span><span class="p">,</span> <span class="n">train_dir</span><span class="p">,</span>
+                                   <span class="n">SOURCE_URL</span> <span class="o">+</span> <span class="n">TRAIN_IMAGES</span><span class="p">)</span>
+  <span class="n">train_images</span> <span class="o">=</span> <span class="n">extract_images</span><span class="p">(</span><span class="n">local_file</span><span class="p">)</span>
+
+  <span class="n">local_file</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">maybe_download</span><span class="p">(</span><span class="n">TRAIN_LABELS</span><span class="p">,</span> <span class="n">train_dir</span><span class="p">,</span>
+                                   <span class="n">SOURCE_URL</span> <span class="o">+</span> <span class="n">TRAIN_LABELS</span><span class="p">)</span>
+  <span class="n">train_labels</span> <span class="o">=</span> <span class="n">extract_labels</span><span class="p">(</span><span class="n">local_file</span><span class="p">,</span> <span class="n">one_hot</span><span class="o">=</span><span class="n">one_hot</span><span class="p">)</span>
+
+  <span class="n">local_file</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">maybe_download</span><span class="p">(</span><span class="n">TEST_IMAGES</span><span class="p">,</span> <span class="n">train_dir</span><span class="p">,</span>
+                                   <span class="n">SOURCE_URL</span> <span class="o">+</span> <span class="n">TEST_IMAGES</span><span class="p">)</span>
+  <span class="n">test_images</span> <span class="o">=</span> <span class="n">extract_images</span><span class="p">(</span><span class="n">local_file</span><span class="p">)</span>
+
+  <span class="n">local_file</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">maybe_download</span><span class="p">(</span><span class="n">TEST_LABELS</span><span class="p">,</span> <span class="n">train_dir</span><span class="p">,</span>
+                                   <span class="n">SOURCE_URL</span> <span class="o">+</span> <span class="n">TEST_LABELS</span><span class="p">)</span>
+  <span class="n">test_labels</span> <span class="o">=</span> <span class="n">extract_labels</span><span class="p">(</span><span class="n">local_file</span><span class="p">,</span> <span class="n">one_hot</span><span class="o">=</span><span class="n">one_hot</span><span class="p">)</span>
+
+  <span class="n">validation_images</span> <span class="o">=</span> <span class="n">train_images</span><span class="p">[:</span><span class="n">VALIDATION_SIZE</span><span class="p">]</span>
+  <span class="n">validation_labels</span> <span class="o">=</span> <span class="n">train_labels</span><span class="p">[:</span><span class="n">VALIDATION_SIZE</span><span class="p">]</span>
+  <span class="n">train_images</span> <span class="o">=</span> <span class="n">train_images</span><span class="p">[</span><span class="n">VALIDATION_SIZE</span><span class="p">:</span><span class="n">TRAINING_SIZE</span><span class="p">]</span>
+  <span class="n">train_labels</span> <span class="o">=</span> <span class="n">train_labels</span><span class="p">[</span><span class="n">VALIDATION_SIZE</span><span class="p">:</span><span class="n">TRAINING_SIZE</span><span class="p">]</span>
+  <span class="n">self_images</span> <span class="o">=</span> <span class="n">train_images</span><span class="p">[</span><span class="n">TRAINING_SIZE</span><span class="p">:]</span>
+  <span class="n">self_labels</span> <span class="o">=</span> <span class="n">train_labels</span><span class="p">[</span><span class="n">TRAINING_SIZE</span><span class="p">:]</span>
+
+  <span class="bp">self</span> <span class="o">=</span> <span class="n">DataSet</span><span class="p">(</span><span class="n">self_images</span><span class="p">,</span> <span class="n">self_labels</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+  <span class="n">train</span> <span class="o">=</span> <span class="n">DataSet</span><span class="p">(</span><span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+  <span class="n">validation</span> <span class="o">=</span> <span class="n">DataSet</span><span class="p">(</span><span class="n">validation_images</span><span class="p">,</span> <span class="n">validation_labels</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+  <span class="n">test</span> <span class="o">=</span> <span class="n">DataSet</span><span class="p">(</span><span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">Datasets</span><span class="p">(</span><span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">validation</span><span class="o">=</span><span class="n">validation</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">),</span> <span class="bp">self</span><span class="p">)</span>
 </pre></div>
 
 </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_text output_error">
+<pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-4-a183378e7d01&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">      2</span>                    fake_data<span class="ansi-blue-fg">=</span>False<span class="ansi-blue-fg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span>                    one_hot<span class="ansi-blue-fg">=</span>False<span class="ansi-blue-fg">,</span>
+<span class="ansi-green-fg">----&gt; 4</span><span class="ansi-red-fg">                    dtype=dtypes.float32):
+</span><span class="ansi-green-intense-fg ansi-bold">      5</span>   SOURCE_URL <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">&#39;http://yann.lecun.com/exdb/mnist&#39;</span>
+<span class="ansi-green-intense-fg ansi-bold">      6</span>   <span class="ansi-green-fg">if</span> fake_data<span class="ansi-blue-fg">:</span>
+
+<span class="ansi-red-fg">NameError</span>: name &#39;dtypes&#39; is not defined</pre>
+</div>
+</div>
+
 </div>
 </div>
 
@@ -11870,10 +11942,10 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[26]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span></span><span class="n">data_set</span><span class="p">,</span> <span class="n">self_data</span> <span class="o">=</span> <span class="n">input_data</span><span class="o">.</span><span class="n">read_data_sets</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">data_set</span><span class="p">,</span> <span class="n">self_data</span> <span class="o">=</span> <span class="n">read_data_sets</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
 <span class="n">training_data</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">train</span>
 <span class="n">testing_data</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">test</span>
 </pre></div>
@@ -11887,12 +11959,23 @@ div#notebook {
 
 
 <div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>Extracting train-images-idx3-ubyte.gz
-Extracting train-labels-idx1-ubyte.gz
-Extracting t10k-images-idx3-ubyte.gz
-Extracting t10k-labels-idx1-ubyte.gz
-</pre>
+<div class="output_subarea output_text output_error">
+<pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-26-41644ff60550&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span><span class="ansi-red-fg"> </span>data_set<span class="ansi-blue-fg">,</span> self_data <span class="ansi-blue-fg">=</span> read_data_sets<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">&#39;&#39;</span><span class="ansi-blue-fg">,</span> False<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">      2</span> training_data <span class="ansi-blue-fg">=</span> data_set<span class="ansi-blue-fg">.</span>train
+<span class="ansi-green-intense-fg ansi-bold">      3</span> testing_data <span class="ansi-blue-fg">=</span> data_set<span class="ansi-blue-fg">.</span>test
+
+<span class="ansi-green-fg">&lt;ipython-input-25-a183378e7d01&gt;</span> in <span class="ansi-cyan-fg">read_data_sets</span><span class="ansi-blue-fg">(train_dir, fake_data, one_hot, dtype)</span>
+<span class="ansi-green-intense-fg ansi-bold">     23</span>   local_file = base.maybe_download(TRAIN_IMAGES, train_dir,
+<span class="ansi-green-intense-fg ansi-bold">     24</span>                                    SOURCE_URL + TRAIN_IMAGES)
+<span class="ansi-green-fg">---&gt; 25</span><span class="ansi-red-fg">   </span>train_images <span class="ansi-blue-fg">=</span> extract_images<span class="ansi-blue-fg">(</span>local_file<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     26</span> 
+<span class="ansi-green-intense-fg ansi-bold">     27</span>   local_file = base.maybe_download(TRAIN_LABELS, train_dir,
+
+<span class="ansi-red-fg">NameError</span>: global name &#39;extract_images&#39; is not defined</pre>
 </div>
 </div>
 
@@ -12018,7 +12101,7 @@ Extracting t10k-labels-idx1-ubyte.gz
     <span class="k">if</span> <span class="n">curr_valid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">best_valid</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
         <span class="bp">False</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">curr_valid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">best_valid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">500</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">curr_valid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">best_valid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">100</span><span class="p">:</span>
             <span class="bp">True</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">False</span>
