@@ -181,15 +181,15 @@ def read_data_sets(train_dir,
   TEST_IMAGES = 't10k-images-idx3-ubyte.gz'
   TEST_LABELS = 't10k-labels-idx1-ubyte.gz'
   VALIDATION_SIZE = 5000
-  TRAINING_SIZE = 10000
+  SELFIING_SIZE = 50000
 
   local_file = base.maybe_download(TRAIN_IMAGES, train_dir,
                                    SOURCE_URL + TRAIN_IMAGES)
-  train_images = extract_images(local_file)
+  dtrain_images = extract_images(local_file)
 
   local_file = base.maybe_download(TRAIN_LABELS, train_dir,
                                    SOURCE_URL + TRAIN_LABELS)
-  train_labels = extract_labels(local_file, one_hot=one_hot)
+  dtrain_labels = extract_labels(local_file, one_hot=one_hot)
 
   local_file = base.maybe_download(TEST_IMAGES, train_dir,
                                    SOURCE_URL + TEST_IMAGES)
@@ -199,19 +199,19 @@ def read_data_sets(train_dir,
                                    SOURCE_URL + TEST_LABELS)
   test_labels = extract_labels(local_file, one_hot=one_hot)
 
-  validation_images = train_images[:VALIDATION_SIZE]
-  validation_labels = train_labels[:VALIDATION_SIZE]
-  train_images = train_images[VALIDATION_SIZE:TRAINING_SIZE]
-  train_labels = train_labels[VALIDATION_SIZE:TRAINING_SIZE]
-  self_images = train_images[TRAINING_SIZE:]
-  self_labels = train_labels[TRAINING_SIZE:]
+  validation_images = dtrain_images[:VALIDATION_SIZE]
+  validation_labels = dtrain_labels[:VALIDATION_SIZE]
+  train_images = dtrain_images[SELFIING_SIZE:]
+  train_labels = dtrain_labels[SELFIING_SIZE:]
+  selfi_images = dtrain_images[VALIDATION_SIZE:SELFIING_SIZE]
+  selfi_labels = dtrain_labels[VALIDATION_SIZE:SELFIING_SIZE]
 
-  self = DataSet(self_images, self_labels, dtype=dtype)
+  selfi = DataSet(selfi_images, selfi_labels, dtype=dtype)
   train = DataSet(train_images, train_labels, dtype=dtype)
   validation = DataSet(validation_images, validation_labels, dtype=dtype)
   test = DataSet(test_images, test_labels, dtype=dtype)
 
-  return (base.Datasets(train=train, validation=validation, test=test), self)
+  return base.Datasets(train=train, validation=validation, test=test), base.Datasets(train=selfi, validation=validation, test=test) 
 
 
 def load_mnist():

@@ -11,7 +11,7 @@
 # 
 # The goal of this assignment is to train a sparse autoencoder network on MNIST Data and visulize its validation data reconstruction.
 
-# In[3]:
+# In[1]:
 
 # These are all the modules we'll be using later. Make sure you can import them
 # before proceeding further.
@@ -22,10 +22,12 @@ import pickle
 
 import numpy as np
 import tensorflow as tf
+#from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
+#from tensorflow.examples.tutorials.mnist import input_data
 from mnist import read_data_sets
 
 
-# In[7]:
+# In[2]:
 
 
 class NoValue:
@@ -38,7 +40,7 @@ _no_value = NoValue()
 
 
 
-# In[8]:
+# In[3]:
 
 def reformat(labels):
     # Map 0 to [1.0, 0.0, 0.0 ...], 1 to [0.0, 1.0, 0.0 ...]
@@ -71,16 +73,26 @@ def load_model(filename):
 
 # ##### Self data extracted but never used.
 
-# In[26]:
+# In[4]:
 
-data_set, self_data = read_data_sets('', False)
+data_set, self_data_set = read_data_sets('', False)
+self_data = self_data_set.train
 training_data = data_set.train
+validation_data = data_set.validation
 testing_data = data_set.test
 
 
 # Do validation testing:
 # - data as a flat matrix,
 # 
+
+# In[5]:
+
+print(self_data._num_examples)
+print(training_data.num_examples)
+print(validation_data.num_examples)
+print(testing_data.num_examples)
+
 
 # In[17]:
 

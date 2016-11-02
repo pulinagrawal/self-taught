@@ -11759,7 +11759,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># These are all the modules we&#39;ll be using later. Make sure you can import them</span>
@@ -11771,6 +11771,8 @@ div#notebook {
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
+<span class="c1">#from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets</span>
+<span class="c1">#from tensorflow.examples.tutorials.mnist import input_data</span>
 <span class="kn">from</span> <span class="nn">mnist</span> <span class="kn">import</span> <span class="n">read_data_sets</span>
 </pre></div>
 
@@ -11781,7 +11783,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="k">class</span> <span class="nc">NoValue</span><span class="p">:</span>
@@ -11800,7 +11802,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="k">def</span> <span class="nf">reformat</span><span class="p">(</span><span class="n">labels</span><span class="p">):</span>
@@ -11856,11 +11858,13 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[26]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span></span><span class="n">data_set</span><span class="p">,</span> <span class="n">self_data</span> <span class="o">=</span> <span class="n">read_data_sets</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">data_set</span><span class="p">,</span> <span class="n">self_data_set</span> <span class="o">=</span> <span class="n">read_data_sets</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+<span class="n">self_data</span> <span class="o">=</span> <span class="n">self_data_set</span><span class="o">.</span><span class="n">train</span>
 <span class="n">training_data</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">train</span>
+<span class="n">validation_data</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">validation</span>
 <span class="n">testing_data</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">test</span>
 </pre></div>
 
@@ -11873,23 +11877,12 @@ div#notebook {
 
 
 <div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_text output_error">
-<pre>
-<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
-<span class="ansi-green-fg">&lt;ipython-input-26-41644ff60550&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
-<span class="ansi-green-fg">----&gt; 1</span><span class="ansi-red-fg"> </span>data_set<span class="ansi-blue-fg">,</span> self_data <span class="ansi-blue-fg">=</span> read_data_sets<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">&#39;&#39;</span><span class="ansi-blue-fg">,</span> False<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">      2</span> training_data <span class="ansi-blue-fg">=</span> data_set<span class="ansi-blue-fg">.</span>train
-<span class="ansi-green-intense-fg ansi-bold">      3</span> testing_data <span class="ansi-blue-fg">=</span> data_set<span class="ansi-blue-fg">.</span>test
-
-<span class="ansi-green-fg">&lt;ipython-input-25-a183378e7d01&gt;</span> in <span class="ansi-cyan-fg">read_data_sets</span><span class="ansi-blue-fg">(train_dir, fake_data, one_hot, dtype)</span>
-<span class="ansi-green-intense-fg ansi-bold">     23</span>   local_file = base.maybe_download(TRAIN_IMAGES, train_dir,
-<span class="ansi-green-intense-fg ansi-bold">     24</span>                                    SOURCE_URL + TRAIN_IMAGES)
-<span class="ansi-green-fg">---&gt; 25</span><span class="ansi-red-fg">   </span>train_images <span class="ansi-blue-fg">=</span> extract_images<span class="ansi-blue-fg">(</span>local_file<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">     26</span> 
-<span class="ansi-green-intense-fg ansi-bold">     27</span>   local_file = base.maybe_download(TRAIN_LABELS, train_dir,
-
-<span class="ansi-red-fg">NameError</span>: global name &#39;extract_images&#39; is not defined</pre>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Extracting train-images-idx3-ubyte.gz
+Extracting train-labels-idx1-ubyte.gz
+Extracting t10k-images-idx3-ubyte.gz
+Extracting t10k-labels-idx1-ubyte.gz
+</pre>
 </div>
 </div>
 
@@ -11909,6 +11902,39 @@ div#notebook {
 
 </div>
 </div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="n">self_data</span><span class="o">.</span><span class="n">_num_examples</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">training_data</span><span class="o">.</span><span class="n">num_examples</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">validation_data</span><span class="o">.</span><span class="n">num_examples</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">testing_data</span><span class="o">.</span><span class="n">num_examples</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>45000
+10000
+5000
+10000
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
