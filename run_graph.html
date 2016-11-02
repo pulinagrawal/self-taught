@@ -11771,8 +11771,7 @@ div#notebook {
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
-<span class="kn">from</span> <span class="nn">tensorflow.contrib.learn.python.learn.datasets.mnist</span> <span class="kn">import</span> <span class="n">read_data_sets</span>
-<span class="kn">from</span> <span class="nn">tensorflow.examples.tutorials.mnist</span> <span class="kn">import</span> <span class="n">input_data</span>
+<span class="kn">from</span> <span class="nn">mnist</span> <span class="kn">import</span> <span class="n">read_data_sets</span>
 </pre></div>
 
 </div>
@@ -11873,7 +11872,7 @@ div#notebook {
 <div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span></span><span class="n">data_set</span><span class="p">,</span> <span class="n">self_data</span> <span class="o">=</span> <span class="n">input_data</span><span class="o">.</span><span class="n">read_data_sets</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">data_set</span><span class="p">,</span> <span class="n">self_data</span> <span class="o">=</span> <span class="n">read_data_sets</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
 <span class="n">training_data</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">train</span>
 <span class="n">testing_data</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">test</span>
 </pre></div>

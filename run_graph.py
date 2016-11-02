@@ -22,8 +22,7 @@ import pickle
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
-from tensorflow.examples.tutorials.mnist import input_data
+from mnist import read_data_sets
 
 
 # In[2]:
@@ -79,7 +78,7 @@ get_ipython().magic(u'pinfo2 input_data.read_data_sets')
 
 # In[5]:
 
-data_set, self_data = input_data.read_data_sets('', False)
+data_set, self_data = read_data_sets('', False)
 training_data = data_set.train
 testing_data = data_set.test
 
