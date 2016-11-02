@@ -11,7 +11,7 @@
 # 
 # The goal of this assignment is to train a sparse autoencoder network on MNIST Data and visulize its validation data reconstruction.
 
-# In[12]:
+# In[1]:
 
 # These are all the modules we'll be using later. Make sure you can import them
 # before proceeding further.
@@ -26,7 +26,7 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.examples.tutorials.mnist import input_data
 
 
-# In[13]:
+# In[2]:
 
 
 class NoValue:
@@ -39,7 +39,7 @@ _no_value = NoValue()
 
 
 
-# In[14]:
+# In[3]:
 
 def reformat(labels):
     # Map 0 to [1.0, 0.0, 0.0 ...], 1 to [0.0, 1.0, 0.0 ...]
@@ -70,14 +70,26 @@ def load_model(filename):
 
 # First we load the MNIST data
 
-# In[15]:
+# In[4]:
 
-data_set = input_data.read_data_sets('', False)
+get_ipython().magic(u'pinfo2 input_data.read_data_sets')
+
+
+# ##### Self data extracted but never used.
+
+# In[5]:
+
+data_set, self_data = input_data.read_data_sets('', False)
 training_data = data_set.train
 testing_data = data_set.test
 
 
 # Checking  the data
+
+# In[3]:
+
+get_ipython().magic(u'pinfo2 training_data.next_batch')
+
 
 # In[16]:
 
@@ -183,13 +195,13 @@ def stopping_criterion(curr_valid, best_valid):
             False
 
 
-# In[25]:
+# In[26]:
 
 step = 0
 verify_validation = False, 1, 1
 v_l = 20000
 best_validation = 10000, 0, start_model
-strict_checking 
+strict_checking = False
 with tf.Session(graph=graph) as session:
     tf.initialize_all_variables().run()
     print("Initialized")
@@ -229,12 +241,13 @@ with tf.Session(graph=graph) as session:
                                     [optimizer, loss, valid_loss, valid_output_units],
                                             feed_dict=feed_dict)
         
-        if stopping_criterion((v_l, step, model), best_validation):
-            save_model(best_validation[2], 'model', best_validation[1])
-            break
-        else:
-            if v_l < best_validation[0]:
-                best_validation = (v_l, step, model)
+            if stopping_criterion((v_l, step, model), best_validation):
+                save_model(best_validation[2], 'model', best_validation[1])
+                break
+            else:
+                if v_l < best_validation[0]:
+                    best_validation = (v_l, step, model)
+                    
 
 
 # In[4]:
