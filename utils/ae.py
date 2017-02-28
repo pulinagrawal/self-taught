@@ -135,10 +135,9 @@ class Autoencoder(object):
         self.optimizer = \
             tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
 
-    def sessioned(session_func):
+    def _sessioned(session_func):
         @wraps(session_func)
-        def sessioned_func(*args, **kwargs):
-            global self
+        def sessioned_func(self, *args, **kwargs):
             if self._sess is None:
                 self._sess = tf.Session()
                 if self.weights is not None:
@@ -147,10 +146,10 @@ class Autoencoder(object):
                     self._sess.run([set_weights, set_biases])
                 else:
                     self._sess.run(tf.global_variables_initializer())
-            return session_func(*args, **kwargs)
+            return session_func(self, *args, **kwargs)
         return sessioned_func
 
-    @sessioned
+    @_sessioned
     def partial_fit(self, input_batch):
         """Train model based on mini-batch of input data.
         Return cost of mini-batch.
@@ -161,19 +160,20 @@ class Autoencoder(object):
                                                               feed_dict={self._x: input_batch})
         return cost
 
-    @sessioned
+    @_sessioned
     def encoding(self, input_tensor):
         """Transform data by mapping it into the latent space."""
         return self._sess.run(self._encoding_layer, feed_dict={self._x: input_tensor})
 
-    @sessioned
+    @_sessioned
     def reconstruct(self, input_tensor):
         """ Use Autoencoder to reconstruct given data. """
         return self._sess.run(self._layers[-1], feed_dict={self._x: input_tensor})
 
-    def save(self, filename):
+    @classmethod
+    def save(cls, instance, filename):
         with open(filename, 'wb') as save_file:
-            pickle.dump(self, save_file)
+            pickle.dump(instance, save_file)
 
     @classmethod
     def load_model(cls, filename):
