@@ -1,11 +1,10 @@
 
 import pickle
 
-import numpy as np
 import tensorflow as tf
 
-np.random.seed(0)
 tf.set_random_seed(0)
+
 
 class Autoencoder(object):
     """ Sparse Autoencoder (VAE) with an sklearn-like interface implemented using TensorFlow.
@@ -13,23 +12,24 @@ class Autoencoder(object):
     This implementation uses encoders and decoders realized by multi-layer perceptrons.
 
     """
-    def __init__(self, network_architecture, session=tf.Session(), learning_rate=0.001, batch_size=100, sparse=False, sparsity=0.1):
+    def __init__(self, network_architecture, session=tf.Session(), learning_rate=0.001,
+                 batch_size=100, sparse=False, sparsity=0.1):
         self.network_architecture = network_architecture
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.sparse = sparse
         self.rho = sparsity
         self.sess = session
-        
+
         # tf Graph input
         self.x = tf.placeholder(tf.float32, [None, network_architecture[0]])
-        
+
         # Create autoencoder network
         self.layers = []
         self._create_network()
         # corresponding optimizer
         self._create_loss_optimizer()
-        
+
         # Initializing the tensor flow variables
         init = tf.global_variables_initializer()
 
@@ -38,36 +38,41 @@ class Autoencoder(object):
 
     def _create_network(self):
         # Initialize autoencode network weights and biases
-        self.network_weights = self._create_weights(*self.network_architecture)
-        self.network_baises = self._create_baises(*self.network_architecture)
-        self._recognition_network(self.network_weights, self.network_baises)
+        self.network_weights = _create_weights(*self.network_architecture)
+        self.network_biases = _create_biases(*self.network_architecture)
+        self._recognition_network(self.network_weights, self.network_biases)
 
-    def _create_weights(self, *args):
+    @staticmethod
+    def _create_weights(*args):
         all_weights = list()
         prev_units = args[0]
         for units in args:
             all_weights.append(tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01)))
         return all_weights
-   
-    def _create_baises(self, *args):
-        all_baises = list()
+
+    @staticmethod
+    def _create_biases(*args):
+        all_biases = list()
         for units in args:
-            all_baises.append(tf.Variable(tf.zeros(units)))
-        return all_baises
-            
+            all_biases.append(tf.Variable(tf.zeros(units)))
+        return all_biases
+
     def _recognition_network(self):
         # Creates the encoding part of network. Output is encoder output.
-        
+
         prev_layer_output = self.x
-        for layer in [ dict(zip(['weights','baises'], _layer)) for _layer in zip(self.network_weights, self.network_baises)]:
-            self.layers.append(self.transfer_fct(layer['weights']*prev_layer_output+layer['baises']))
+        for layer in [ dict(zip(['weights','biases'], _layer)) for _layer in zip(self.network_weights, self.network_biases)]:
+            self.layers.append(self.transfer_fct(layer['weights']*prev_layer_output+layer['biases']))
         self.encoding_layer = self.layers[-1]
 
     def _generator_network(self):
         # Creates the decoding part of network. Output is reconstruction.
+        generator_weights = self.network_weights.reverse()  # For tied weights
+        generator_biases = self.network_biases.reverse()
+
         prev_layer_output = self.layers[-1]
-        for layer in [ dict(zip(['weights','baises'], _layer)) for _layer in zip(generator_weights, generator_baises)]:
-            self.layers.append(self.transfer_fct(layer['weights']*prev_layer_output+layer['baises']))
+        for layer in [ dict(zip(['weights','biases'], _layer)) for _layer in zip(generator_weights, generator_biases)]:
+            self.layers.append(self.transfer_fct(layer['weights']*prev_layer_output+layer['biases']))
 
     def _KL_divergence(self, units):
         rho = tf.constant(rho)
@@ -79,12 +84,12 @@ class Autoencoder(object):
         klterm = (rho*tf.log(rho/rho_hat))+(rho_in*tf.log(rho_in/rho_hat_in))
         kl_div = tf.reduce_sum(klterm)
         return kl_div
-            
+
     def _create_loss_optimizer(self, reconstruction):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
         reconstr_loss = tf.div(tf.nn.l2_loss(tf.sub(reconstruction, self.x)), tf.constant(float(batch_size)))
-        
+
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence 
         ##    between the desired sparsity and current sparsity in the latent representation
         #     in all hidden layers
@@ -103,8 +108,8 @@ class Autoencoder(object):
                 self.sess = tf.Session()
                 if self.weights is not None:
                     set_weights = tf.assign(self.network_weights, self.weights)
-                    set_baises = tf.assign(self.network_baises, self.baises)
-                    sess.run([set_weights, set_baises])
+                    set_biases = tf.assign(self.network_biases, self.biases)
+                    sess.run([set_weights, set_biases])
                 else:
                     self.sess.run(tf.global_variables_initializer())
             return session_func(*args, **kwargs)
@@ -115,8 +120,8 @@ class Autoencoder(object):
         """Train model based on mini-batch of input data.
         Return cost of mini-batch.
         """
-        opt, cost, self.weights, self.baises = self.sess.run((self.optimizer, self.cost,
-                                                              self.network_weights, self.network_baises),
+        opt, cost, self.weights, self.biases = self.sess.run((self.optimizer, self.cost,
+                                                              self.network_weights, self.network_biases),
                                                              feed_dict={self.x: X})
         return cost
 
