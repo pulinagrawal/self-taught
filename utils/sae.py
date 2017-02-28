@@ -61,7 +61,8 @@ class Autoencoder(object):
         # Creates the encoding part of network. Output is encoder output.
 
         prev_layer_output = self.x
-        for layer in [ dict(zip(['weights','biases'], _layer)) for _layer in zip(self.network_weights, self.network_biases)]:
+        for layer in [dict(zip(['weights', 'biases'], _layer))
+                      for _layer in zip(self.network_weights, self.network_biases)]:
             self.layers.append(self.transfer_fct(layer['weights']*prev_layer_output+layer['biases']))
         self.encoding_layer = self.layers[-1]
 
@@ -71,32 +72,32 @@ class Autoencoder(object):
         generator_biases = self.network_biases.reverse()
 
         prev_layer_output = self.layers[-1]
-        for layer in [ dict(zip(['weights','biases'], _layer)) for _layer in zip(generator_weights, generator_biases)]:
+        for layer in [dict(zip(['weights', 'biases'], _layer))
+                      for _layer in zip(generator_weights, generator_biases)]:
             self.layers.append(self.transfer_fct(layer['weights']*prev_layer_output+layer['biases']))
 
     def _KL_divergence(self, units):
         rho = tf.constant(rho)
         int_rho = tf.reduce_sum(units, 0)
         rho_hat = tf.div(int_rho, self.batch_size)
-        rho_hat_mean = tf.reduce_mean(rho_hat)
         rho_inv = tf.constant(1.)-rho
         rho_hat_inv = tf.constant(1.)-rho_hat
-        klterm = (rho*tf.log(rho/rho_hat))+(rho_in*tf.log(rho_in/rho_hat_in))
-        kl_div = tf.reduce_sum(klterm)
+        kl_term = (rho*tf.log(rho/rho_hat))+(rho_inv*tf.log(rho_in/rho_hat_inv))
+        kl_div = tf.reduce_sum(kl_term)
         return kl_div
 
     def _create_loss_optimizer(self, reconstruction):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
-        reconstr_loss = tf.div(tf.nn.l2_loss(tf.sub(reconstruction, self.x)), tf.constant(float(batch_size)))
+        reconstruction_loss = tf.div(tf.nn.l2_loss(tf.sub(reconstruction, self.x)), tf.constant(float(batch_size)))
 
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence 
-        ##    between the desired sparsity and current sparsity in the latent representation
+        #     between the desired sparsity and current sparsity in the latent representation
         #     in all hidden layers
         for layer in self.layers:
             if layer is not self.layers[-1]: # Reconstruction layer should not be sparse
                 latent_loss += self._KL_divergence(layer)
-        self.cost = tf.reduce_mean(reconstr_loss + latent_loss)   # average over batch
+        self.cost = tf.reduce_mean(reconstruction_loss + latent_loss)   # average over batch
         # Use ADAM optimizer
         self.optimizer = \
             tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
