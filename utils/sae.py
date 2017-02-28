@@ -1,3 +1,6 @@
+
+import pickle
+
 import numpy as np
 import tensorflow as tf
 
@@ -10,12 +13,13 @@ class Autoencoder(object):
     This implementation uses encoders and decoders realized by multi-layer perceptrons.
 
     """
-    def __init__(self, network_architecture, learning_rate=0.001, batch_size=100, sparse=False, sparsity=0.1):
+    def __init__(self, network_architecture, session=tf.Session(), learning_rate=0.001, batch_size=100, sparse=False, sparsity=0.1):
         self.network_architecture = network_architecture
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.sparse = sparse
         self.rho = sparsity
+        self.sess = session
         
         # tf Graph input
         self.x = tf.placeholder(tf.float32, [None, network_architecture[0]])
@@ -23,17 +27,15 @@ class Autoencoder(object):
         # Create autoencoder network
         self.layers = []
         self._create_network()
-        # Define loss function based variational upper-bound and 
         # corresponding optimizer
         self._create_loss_optimizer()
         
         # Initializing the tensor flow variables
-        init = tf.initialize_all_variables()
+        init = tf.global_variables_initializer()
 
         # Launch the session
-        self.sess = tf.InteractiveSession()
         self.sess.run(init)
-    
+
     def _create_network(self):
         # Initialize autoencode network weights and biases
         self.network_weights = self._create_weights(*self.network_architecture)
@@ -80,21 +82,12 @@ class Autoencoder(object):
             
     def _create_loss_optimizer(self, reconstruction):
         # The loss is composed of two terms:
-        # 1.) The reconstruction loss (the negative log probability
-        #     of the input under the reconstructed Bernoulli distribution 
-        #     induced by the decoder in the data space).
-        #     This can be interpreted as the number of "nats" required
-        #     for reconstructing the input when the activation in latent
-        #     is given.
-        # Adding 1e-10 to avoid evaluatio of log(0.0)
+        # 1.) The reconstruction loss
         reconstr_loss = tf.div(tf.nn.l2_loss(tf.sub(reconstruction, self.x)), tf.constant(float(batch_size)))
         
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence 
-        ##    between the distribution in latent space induced by the encoder on 
-        #     the data and some prior. This acts as a kind of regularizer.
-        #     This can be interpreted as the number of "nats" required
-        #     for transmitting the the latent space distribution given
-        #     the prior.
+        ##    between the desired sparsity and current sparsity in the latent representation
+        #     in all hidden layers
         for layer in self.layers:
             if layer is not self.layers[-1]: # Reconstruction layer should not be sparse
                 latent_loss += self._KL_divergence(layer)
@@ -102,21 +95,51 @@ class Autoencoder(object):
         # Use ADAM optimizer
         self.optimizer = \
             tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
-        
+
+    def sessioned(self, session_func):
+        @wraps(session_func)
+        def sessioned_func(*args, **kwargs):
+            if self.sess is None:
+                self.sess = tf.Session()
+                if self.weights is not None:
+                    set_weights = tf.assign(self.network_weights, self.weights)
+                    set_baises = tf.assign(self.network_baises, self.baises)
+                    sess.run([set_weights, set_baises])
+                else:
+                    self.sess.run(tf.global_variables_initializer())
+            return session_func(*args, **kwargs)
+        return sessioned_func
+
+    @sessioned
     def partial_fit(self, X):
         """Train model based on mini-batch of input data.
-        
         Return cost of mini-batch.
         """
-        opt, cost = self.sess.run((self.optimizer, self.cost), feed_dict={self.x: X})
+        opt, cost, self.weights, self.baises = self.sess.run((self.optimizer, self.cost,
+                                                              self.network_weights, self.network_baises),
+                                                             feed_dict={self.x: X})
         return cost
-    
+
+    @sessioned
     def encoding(self, X):
         """Transform data by mapping it into the latent space."""
         # Note: This maps to mean of distribution, we could alternatively
         # sample from Gaussian distribution
         return self.sess.run(self.encoding_layer, feed_dict={self.x: X})
-    
+
+    @sessioned
     def reconstruct(self, X):
         """ Use SAE to reconstruct given data. """
         return self.sess.run(self.layers[-1], feed_dict={self.x: X})
+
+    @staticmethod
+    def save_data(instance, filename):
+        with open(filename, 'wb') as save_file:
+            pickle.dump(instance, save_file)
+
+    @staticmethod
+    def load_model(filename):
+        with open(filename, 'rb') as load_file:
+            instance = pickle.load(load_file)
+        return instance
+
