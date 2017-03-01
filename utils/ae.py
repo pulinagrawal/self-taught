@@ -137,33 +137,16 @@ class Autoencoder(object):
         self.optimizer = \
             tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
 
-    def _sessioned(session_func):
-        @wraps(session_func)
-        def sessioned_func(self, *args, **kwargs):
-            if self._sess is None:
-                self._sess = tf.Session()
-            if self._new:
-                if self.weights is None:
-                    self._sess.run(tf.global_variables_initializer())
-                    self._new = False
-                else:
-                    set_weights = list()
-                    set_biases = list()
-                    weights_zip = zip(self._network_weights[:len(self._network_weights)//2], self.weights)
-                    for weight_tensor, weight in weights_zip:
-                        set_weights.append(tf.assign(weight_tensor, weight))
-                    for biases_tensor, biases in zip(self._network_biases, self.biases):
-                        set_biases.append(tf.assign(biases_tensor, biases))
-                    self._sess.run([set_weights, set_biases])
-                    self._new = False
-            return session_func(self, *args, **kwargs)
-        return sessioned_func
-
-    @_sessioned
     def setup(self):
-        pass
+        set_weights = list()
+        set_biases = list()
+        weights_zip = zip(self._network_weights[:len(self._network_weights)//2], self.weights)
+        for weight_tensor, weight in weights_zip:
+            set_weights.append(tf.assign(weight_tensor, weight))
+        for biases_tensor, biases in zip(self._network_biases, self.biases):
+            set_biases.append(tf.assign(biases_tensor, biases))
+        self._sess.run([set_weights, set_biases])
 
-    @_sessioned
     def partial_fit(self, input_batch):
         """Train model based on mini-batch of input data.
         Return cost of mini-batch.
@@ -174,12 +157,10 @@ class Autoencoder(object):
                                                               feed_dict={self._x: input_batch})
         return cost
 
-    @_sessioned
     def encoding(self, input_tensor):
         """Transform data by mapping it into the latent space."""
         return self._sess.run(self._encoding_layer, feed_dict={self._x: input_tensor})
 
-    @_sessioned
     def reconstruct(self, input_tensor):
         """ Use Autoencoder to reconstruct given data. """
         return self._sess.run(self._layers[-1], feed_dict={self._x: input_tensor})
