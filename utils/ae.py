@@ -102,7 +102,8 @@ class Autoencoder(object):
         for i, layer in enumerate(layers):
             current_layer = self._transfer_fct(tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])
             self._layers.append(current_layer)
-            if i == len(self._network_architecture)-1:
+            if i == len(self._network_architecture)-2:
+                print("i = ",i,"encoding layer = ", current_layer)
                 self._encoding_layer = current_layer
             print(prev_layer_output, 'x', layer['weights'], '+', layer['biases'])
             prev_layer_output = current_layer
@@ -166,10 +167,6 @@ class Autoencoder(object):
     def reconstruct(self, input_tensor):
         """ Use Autoencoder to reconstruct given data. """
         return self._sess.run(self._layers[-1], feed_dict={self._x: input_tensor})
-
-    @property
-    def weights(self):
-        return self._sess.run([self._network_weights])
 
     def save(self, filename):
         save_list = [{'network_architecture': self._network_architecture,

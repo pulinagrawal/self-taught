@@ -18,7 +18,7 @@ class FeedForwardNetwork(object):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
-        self.learning_rate = learning_rate
+        self._starting_learning_rate = learning_rate
         self.batch_size = batch_size
         self._sess = session
         self._transfer_fct = transfer_fct
@@ -27,6 +27,7 @@ class FeedForwardNetwork(object):
         self.biases = None
 
         # tf Graph input
+        self._global_step = tf.Variable(0, trainable=False)
         self._x = tf.placeholder(tf.float32, [self.batch_size, network_architecture[0]])
         self._y = tf.placeholder(tf.float32, [self.batch_size, network_architecture[-1]])
         print(self.batch_size, 'x',  network_architecture[0])
@@ -111,8 +112,9 @@ class FeedForwardNetwork(object):
         self.cost = tf.reduce_mean(loss)   # average over batch
         # Use ADAM optimizer
         # TODO Make learning rate dynamic
+        self._learning_rate = tf.train.exponential_decay(self._starting_learning_rate, self._global_step, 100000, 0.96, staircase=True)
         self.optimizer = \
-            tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
+            tf.train.AdamOptimizer(learning_rate=self._learning_rate).minimize(self.cost, global_step=self._global_step)
 
     def setup(self):
         """Setup a pre-created network with loaded weights and biases"""
@@ -130,18 +132,22 @@ class FeedForwardNetwork(object):
         Return cost of mini-batch.
         """
         # TODO Check mini-batch size and input shape
-        opt, cost, self.weights, self.biases = self._sess.run((self.optimizer, self.cost,
-                                                               self._network_weights, self._network_biases),
-                                                              feed_dict={self._x: input_batch, self._y: output_labels})
+
+        opt, cost, self.learning_rate, self.weights, self.biases = self._sess.run((self.optimizer, self.cost,
+                                                                                   self._learning_rate,
+                                                                                   self._network_weights,
+                                                                                   self._network_biases),
+                                                                                  feed_dict={self._x: input_batch,
+                                                                                             self._y: output_labels})
         return cost
 
-    def encoding(self, input_tensor):
+    def encoding(self, input_batch):
         """Transform data by mapping it into the latent space."""
-        return self._sess.run(self._encoding_layer, feed_dict={self._x: input_tensor})
+        return self._sess.run(self._encoding_layer, feed_dict={self._x: input_batch})
 
-    @property
-    def weights(self):
-        return self._sess.run([self._network_weights])
+    def loss_on(self, input_batch):
+        cost = self._sess.run(self.cost, feed_dict={self._x: input_batch})
+        return cost
 
     def save(self, filename):
         save_list = [{'network_architecture': self._network_architecture,
