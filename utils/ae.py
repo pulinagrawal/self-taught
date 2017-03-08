@@ -2,8 +2,6 @@
 import pickle
 import tensorflow as tf
 
-from functools import wraps
-
 tf.set_random_seed(0)
 
 
@@ -17,6 +15,8 @@ class Autoencoder(object):
 
     def __init__(self, network_architecture, session=tf.Session(), learning_rate=0.001,
                  batch_size=100, sparse=False, sparsity=0.1, transfer_fct=tf.nn.sigmoid, tied_weights=True):
+        """Initializes a Autoencoder network with network architecture provided in the form of list of
+        hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
         self.learning_rate = learning_rate
         self.batch_size = batch_size
@@ -134,10 +134,12 @@ class Autoencoder(object):
 
         self.cost = tf.reduce_mean(reconstruction_loss + latent_loss)   # average over batch
         # Use ADAM optimizer
+        # TODO Make learning rate dynamic
         self.optimizer = \
             tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
 
     def setup(self):
+        """Setup a pre-created network with loaded weights and biases"""
         set_weights = list()
         set_biases = list()
         weights_zip = zip(self._network_weights[:len(self._network_weights)//2], self.weights)
@@ -165,6 +167,10 @@ class Autoencoder(object):
         """ Use Autoencoder to reconstruct given data. """
         return self._sess.run(self._layers[-1], feed_dict={self._x: input_tensor})
 
+    @property
+    def weights(self):
+        return self._sess.run([self._network_weights])
+
     def save(self, filename):
         save_list = [{'network_architecture': self._network_architecture,
                       'learning_rate': self.learning_rate,
@@ -183,19 +189,8 @@ class Autoencoder(object):
     def load_model(cls, filename):
         with open(filename, 'rb') as load_file:
             load_list = pickle.load(load_file)
-            instance = Autoencoder(**load_list[0])
+            instance = cls(**load_list[0])
             instance.weights = load_list[1]
             instance.biases = load_list[2]
             instance.setup()
         return instance
-
-
-sae = Autoencoder([784,500,200],sparse=True)
-import numpy as np
-inp = np.random.random_sample([100,784])
-print(sae.partial_fit(inp))
-print(sae.partial_fit(inp))
-sae.save('test_save1.ae')
-new_sae = Autoencoder.load_model('test_save1.ae')
-print(new_sae.partial_fit(inp))
-
