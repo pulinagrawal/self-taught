@@ -2,7 +2,7 @@ import numpy as np
 
 from utils import ae
 from utils import ffd
-import generator as my_utils
+import generator as gen_utils
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 from tensorflow.contrib.learn.python.learn.datasets import base
@@ -41,8 +41,8 @@ class SelfTaughtTrainer(object):
         return cls(feature_network, output_network, unlabelled_data, labelled_data, validation, test, save_filename)
 
     @staticmethod
-    @my_utils.get_ready
-    def value_list_criterion():
+    @gen_utils.ready_generator
+    def list_of_values_stopping_criterion():
         stop_cond = False
         prev_weights = yield
         new_weights = yield stop_cond
@@ -52,13 +52,13 @@ class SelfTaughtTrainer(object):
             div = np.divide(sub, np.array(prev_weights))
             max_diff_pct = np.max(np.concatenate([divided.flatten() for divided in div],axis=0))
             stop_cond = max_diff_pct < 0.001
-            # TODO May need a if breaking
+            # TODO May need a if breaking (so that generator terminates smoothly?)
             new_weights = yield stop_cond
             prev_weights = one_prev_weights
 
     def run_unsupervised_training(self):
-        stop_for_w = SelfTaughtTrainer.value_list_criterion()
-        stop_for_b = SelfTaughtTrainer.value_list_criterion()
+        stop_for_w = SelfTaughtTrainer.list_of_values_stopping_criterion()
+        stop_for_b = SelfTaughtTrainer.list_of_values_stopping_criterion()
         prev_epochs = 0
         while self._unlabelled.epochs_completed < self._max_epochs:
             self._feature_network.partial_fit(self._unlabelled.next_batch(self._feature_network.batch_size)[0])
@@ -76,20 +76,20 @@ class SelfTaughtTrainer(object):
         self._validation_features = self._feature_network.encoding(validation_batch_input)
 
     @staticmethod
-    @my_utils.get_ready
-    def loss_criterion():
+    @gen_utils.ready_generator
+    def loss_stopping_criterion():
         stop_cond = False
         prev_loss = yield
         new_loss = yield stop_cond
         while not stop_cond:
             one_prev_loss = new_loss
             stop_cond = new_loss > prev_loss
-            # TODO May need a if breaking
+            # TODO May need a if breaking (so that generator terminates smoothly?)
             new_loss = yield stop_cond
             prev_loss = one_prev_loss
 
     def run_supervised_training(self):
-        stop_for = SelfTaughtTrainer.loss_criterion()
+        stop_for = SelfTaughtTrainer.loss_stopping_criterion()
         prev_epochs = 0
         while self._labelled.epochs_completed < self._max_epochs:
             input_batch, output_labels = self._labelled.next_batch(self._feature_network.batch_size)

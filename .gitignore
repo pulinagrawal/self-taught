@@ -2,5 +2,5 @@
 *.pyc
 *.*~
 .ipynb*
-.idea*
-*.idea/*
+*.idea*
+*.net
