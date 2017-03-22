@@ -40,7 +40,7 @@ class Autoencoder(object):
         self._create_loss_optimizer(self._layers[-1])
 
         # Initializing the tensor flow variables
-        init = tf.global_variables_initializer()
+        init = tf.initialize_all_variables()
 
         # Launch the session
         self._sess.run(init)

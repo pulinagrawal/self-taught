@@ -14,7 +14,7 @@ class SelfTaughtTrainer(object):
     run_supervised_training() trains the network on labelled data. You need to provide this class with an
     network object."""
 
-    def __init__(self, feature_network: ae.Autoencoder, output_network: ffd.FeedForwardNetwork,
+    def __init__(self, feature_network, output_network,
                  unlabelled, labelled, validation, test, save_filename, max_epochs=3):
         self._unlabelled = unlabelled
         print("Unlabelled Examples", self._unlabelled.num_examples)
@@ -32,7 +32,7 @@ class SelfTaughtTrainer(object):
 
     @classmethod
     def from_only_labelled(cls, feature_network, output_network,
-                           data: base.Dataset, save_filename, unlabelled_pct=80):
+                           data, save_filename, unlabelled_pct=80):
         num_unlabelled = int((unlabelled_pct/100.0)*data.train.num_examples)
         unlabelled_data = DataSet(*data.train.next_batch(num_unlabelled), reshape=False)
         labelled_data = DataSet(*data.train.next_batch(data.train.num_examples-num_unlabelled), reshape=False)
