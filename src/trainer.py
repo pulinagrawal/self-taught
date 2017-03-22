@@ -68,12 +68,15 @@ class SelfTaughtTrainer(object):
                 prev_epochs = self._unlabelled.epochs_completed
                 self._feature_network.save(self._save_filename+'_ae_'+str(prev_epochs)+'.net')
                 if stop_for_w(self._feature_network.weights) and stop_for_b(self._feature_network.biases) is True:
+                    print("Convergence by Stopping Criterion")
                     break
         self._after_unsupervised_training()
 
     def _after_unsupervised_training(self):
-        validation_batch_input, valid_batch_output = self._validation.next_batch(self._validation.num_examples)
-        self._validation_features = self._feature_network.encoding(validation_batch_input)
+        self._validation_features = []
+        while self._validation.epochs_completed < 1:
+            validation_batch_input, _ = self._validation.next_batch(self._feature_network.batch_size)
+            self._validation_features.append(self._feature_network.encoding(validation_batch_input))
 
     @staticmethod
     @gen_utils.ready_generator
@@ -96,12 +99,13 @@ class SelfTaughtTrainer(object):
             features = self._feature_network.encoding(input_batch)
             cost = self._output_network.partial_fit(features, output_labels)
 
-            if self._unlabelled.epochs_completed > prev_epochs:
+            if self._labelled.epochs_completed > prev_epochs:
                 print(prev_epochs," Supervised Epochs Completed")
-                prev_epochs = self._unlabelled.epochs_completed
-                self._output_network.save(self._save_filename+'_ffd_'+prev_epochs+'.net')
+                prev_epochs = self._labelled.epochs_completed
+                self._output_network.save(self._save_filename+'_ffd_'+str(prev_epochs)+'.net')
                 if self._output_network.learning_rate < self._learning_rate_limit:
                     if stop_for(self._output_network.loss_on(self._validation_features)) is True:
+                        print("Convergence by Stopping Criterion")
                         break
 
     def _after_supervised_training(self):
@@ -121,7 +125,10 @@ class SelfTaughtTrainer(object):
 
     def validation_accuracy(self):
         valid_batch_labels = self._validation.next_batch(self._validation.num_examples)[1]
-        validation_output = self._output_network(self._validation_features)
+        validation_output = []
+        for validation_features in self._validation_features:
+            validation_output.append(self._output_network(validation_features))
+        validation_output = np.array(validation_output)
         return SelfTaughtTrainer.accuracy(validation_output, valid_batch_labels)
 
     def output(self, input_batch):
