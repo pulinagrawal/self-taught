@@ -14,12 +14,11 @@ class Autoencoder(object):
     """
 
     def __init__(self, network_architecture, session=tf.Session(), learning_rate=0.001,
-                 batch_size=100, sparse=False, sparsity=0.1, transfer_fct=tf.nn.sigmoid, tied_weights=True):
+                 sparse=False, sparsity=0.1, transfer_fct=tf.nn.sigmoid, tied_weights=True):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
         self.learning_rate = learning_rate
-        self.batch_size = batch_size
         self.sparse = sparse
         self.rho = sparsity
         self._sess = session
@@ -30,8 +29,8 @@ class Autoencoder(object):
         self.biases = None
 
         # tf Graph input
-        self._x = tf.placeholder(tf.float32, [self.batch_size, network_architecture[0]])
-        print(self.batch_size, 'x',  network_architecture[0])
+        self._x = tf.placeholder(tf.float32, [None, network_architecture[0]])
+        print('batch size', 'x',  network_architecture[0])
 
         # Create autoencoder network
         self._layers = []
@@ -118,10 +117,10 @@ class Autoencoder(object):
         kl_div = tf.reduce_sum(kl_term)
         return kl_div
 
-    def _create_loss_optimizer(self, reconstruction):
+    def _create_loss_optimizer(self, reconstruction_tensor):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
-        reconstruction_loss = tf.nn.l2_loss((reconstruction-self._x))/tf.constant(float(self.batch_size))
+        reconstruction_loss = tf.nn.l2_loss((reconstruction_tensor-self._x))
 
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence 
         #     between the desired sparsity and current sparsity in the latent representation
@@ -171,7 +170,6 @@ class Autoencoder(object):
     def save(self, filename):
         save_list = [{'network_architecture': self._network_architecture,
                       'learning_rate': self.learning_rate,
-                      'batch_size': self.batch_size,
                       'sparse': self.sparse,
                       'sparsity': self.rho,
                       'transfer_fct': self._transfer_fct,
@@ -185,7 +183,7 @@ class Autoencoder(object):
     @classmethod
     def load_model(cls, filename):
         with open(filename, 'rb') as load_file:
-            load_list = pickle.load(load_file)
+            load_list = pickle.load(load_file, encoding='latin1')
             instance = cls(**load_list[0])
             instance.weights = load_list[1]
             instance.biases = load_list[2]

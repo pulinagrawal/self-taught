@@ -14,12 +14,11 @@ class FeedForwardNetwork(object):
     """
 
     def __init__(self, network_architecture, session=tf.Session(), learning_rate=0.001,
-                 batch_size=100, transfer_fct=tf.nn.sigmoid):
+                 transfer_fct=tf.nn.sigmoid):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
         self._starting_learning_rate = learning_rate
-        self.batch_size = batch_size
         self._sess = session
         self._transfer_fct = transfer_fct
         self._new = True
@@ -28,9 +27,9 @@ class FeedForwardNetwork(object):
 
         # tf Graph input
         self._global_step = tf.Variable(0, trainable=False)
-        self._x = tf.placeholder(tf.float32, [self.batch_size, network_architecture[0]])
-        self._y = tf.placeholder(tf.float32, [self.batch_size, network_architecture[-1]])
-        print(self.batch_size, 'x',  network_architecture[0])
+        self._x = tf.placeholder(tf.float32, [None, network_architecture[0]])
+        self._y = tf.placeholder(tf.float32, [None, network_architecture[-1]])
+        print('batch size', 'x',  network_architecture[0])
 
         # Create autoencoder network
         self._layers = []
@@ -95,7 +94,7 @@ class FeedForwardNetwork(object):
         for i, layer in enumerate(layers):
             current_layer = self._transfer_fct(tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])
             self._layers.append(current_layer)
-            if i == len(self._network_architecture)-1:
+            if i == len(self._network_architecture)-2:
                 self._encoding_layer = current_layer
             print(prev_layer_output, 'x', layer['weights'], '+', layer['biases'])
             prev_layer_output = current_layer
@@ -103,7 +102,7 @@ class FeedForwardNetwork(object):
     def _create_loss_optimizer(self, output):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
-        loss = tf.nn.l2_loss((output-self._y))/tf.constant(float(self.batch_size))
+        loss = tf.nn.l2_loss((output-self._y))
 
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence 
         #     between the desired sparsity and current sparsity in the latent representation
@@ -112,7 +111,7 @@ class FeedForwardNetwork(object):
         self.cost = tf.reduce_mean(loss)   # average over batch
         # Use ADAM optimizer
         # TODO Make learning rate dynamic
-        self._learning_rate = tf.train.exponential_decay(self._starting_learning_rate, self._global_step, 100000, 0.96, staircase=True)
+        self._learning_rate = tf.train.exponential_decay(self._starting_learning_rate, self._global_step, 100, 0.96)
         self.optimizer = \
             tf.train.AdamOptimizer(learning_rate=self._learning_rate).minimize(self.cost, global_step=self._global_step)
 
@@ -145,14 +144,13 @@ class FeedForwardNetwork(object):
         """Transform data by mapping it into the latent space."""
         return self._sess.run(self._encoding_layer, feed_dict={self._x: input_batch})
 
-    def loss_on(self, input_batch):
-        cost = self._sess.run(self.cost, feed_dict={self._x: input_batch})
+    def loss_on(self, input_batch, labels):
+        cost = self._sess.run(self.cost, feed_dict={self._x: input_batch, self._y: labels})
         return cost
 
     def save(self, filename):
         save_list = [{'network_architecture': self._network_architecture,
                       'learning_rate': self.learning_rate,
-                      'batch_size': self.batch_size,
                       'transfer_fct': self._transfer_fct},
                      self.weights[:len(self.weights)],
                      self.biases]
