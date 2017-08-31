@@ -89,6 +89,7 @@ class SelfTaughtTrainer(object):
 
                 validation_loss = self._feature_network.loss(self._validation.next_batch(self._validation.num_examples)[0])
                 validation_reconstruction_loss = self._feature_network.reconstruction_loss
+                #added logging
                 print("{0} Unsupervised Epochs Completed. Validation loss = {1},"
                       " reconstruction loss = {2]".format(last_epoch, validation_loss, validation_reconstruction_loss))
 
