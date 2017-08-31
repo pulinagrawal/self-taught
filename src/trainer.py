@@ -63,9 +63,9 @@ class SelfTaughtTrainer(object):
         while True:
             new_values_temp = new_values
             diff_weights = np.subtract(new_values, prev_values)
-            pct_change_values = np.divide(diff_weights, np.array(prev_values))
+            pct_change_values = np.absolute(np.divide(diff_weights, np.array(prev_values)))
             max_diff_pct = np.max(np.concatenate([change.flatten() for change in pct_change_values], axis=0))
-            stop_cond = max_diff_pct < 1
+            stop_cond = max_diff_pct < .1
             # TODO May need a if breaking (so that generator terminates smoothly?)
             new_values = yield stop_cond
             prev_values = new_values_temp
@@ -96,9 +96,12 @@ class SelfTaughtTrainer(object):
                 self._feature_network.save(self._save_filename+'_ae_'+str(last_epoch)+'.net')
                 weight_condition = stop_for_w(self._feature_network.weights)
                 bias_condition = stop_for_b(self._feature_network.biases)
+                """
                 if self._early_stopping:
                     if stop_for_reconstruction_loss(validation_reconstruction_loss):
                         print('Convergence by Early Stopping Criterion')
+                        break
+                """
                 if weight_condition and bias_condition:
                         print('Convergence by Stopping Criterion')
                         break
