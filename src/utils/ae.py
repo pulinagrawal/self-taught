@@ -164,10 +164,11 @@ class Autoencoder(object):
         return self._sess.run(self._encoding_layer, feed_dict={self._x: input_tensor})
 
     def loss(self, input_tensor):
-        return self._sess.run(self.cost, feed_dict={self._x: input_tensor})
+        return self._sess.run((self.cost, self.reconstruction_loss), feed_dict={self._x: input_tensor})
 
     def reconstruction_loss(self, input_tensor):
-        return self._sess.run(self.reconstruction_loss, feed_dict={self._x: input_tensor})
+        loss = self._sess.run((self.reconstruction_loss,), feed_dict={self._x: input_tensor})
+        return loss
 
     def reconstruct(self, input_tensor):
         """ Use Autoencoder to reconstruct given data. """

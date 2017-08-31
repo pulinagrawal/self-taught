@@ -87,16 +87,16 @@ class SelfTaughtTrainer(object):
             if self._unlabelled.epochs_completed > last_epoch:
                 last_epoch = self._unlabelled.epochs_completed
 
-                validation_loss = self._feature_network.loss(self._validation.next_batch(self._validation.num_examples)[0])
-                validation_reconstruction_loss = self._feature_network.reconstruction_loss
+                validation_loss, validation_reconstruction_loss = \
+                    self._feature_network.loss(self._validation.next_batch(self._validation.num_examples)[0])
                 #added logging
                 print("{0} Unsupervised Epochs Completed. Validation loss = {1},"
-                      " reconstruction loss = {2]".format(last_epoch, validation_loss, validation_reconstruction_loss))
+                      " reconstruction loss = {2}".format(last_epoch, validation_loss, validation_reconstruction_loss))
 
                 self._feature_network.save(self._save_filename+'_ae_'+str(last_epoch)+'.net')
                 weight_condition = stop_for_w(self._feature_network.weights)
                 bias_condition = stop_for_b(self._feature_network.biases)
-                if self._early_stoppping:
+                if self._early_stopping:
                     if stop_for_reconstruction_loss(validation_reconstruction_loss):
                         print('Convergence by Early Stopping Criterion')
                 if weight_condition and bias_condition:
