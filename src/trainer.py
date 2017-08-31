@@ -1,4 +1,7 @@
 import numpy as np
+import datetime as dt
+import os
+import csv
 
 from utils import ae
 from utils import ffd
@@ -6,7 +9,9 @@ import utils.generator as gen_utils
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 from tensorflow.contrib.learn.python.learn.datasets import base
+import tensorflow as tf
 
+tf.logging.set_verbosity(tf.logging.INFO)
 LEARNING_RATE_LIMIT = 0.00001
 
 
@@ -17,7 +22,8 @@ class SelfTaughtTrainer(object):
     network object."""
 
     def __init__(self, feature_network, output_network, batch_size,
-                 unlabelled, labelled, validation, test, save_filename, max_epochs=20000):
+                 unlabelled, labelled, validation, test, save_filename, run_folder=str(dt.datetime.now()),
+                 early_stopping=True, max_epochs=20000):
         self._unlabelled = unlabelled
         print("Unlabelled Examples", self._unlabelled.num_examples)
         self._labelled = labelled
@@ -30,19 +36,23 @@ class SelfTaughtTrainer(object):
         self._output_network = output_network
         self._max_epochs = max_epochs
         self._batch_size = batch_size
+        self._early_stopping = early_stopping
         self._learning_rate_limit = LEARNING_RATE_LIMIT
-        self._save_filename = save_filename
+        self._run_folder = run_folder.replace(' ', '_').replace(':', '-').replace('.', '-')
+        os.mkdir(self._run_folder)
+        self._save_filename = os.path.join(self._run_folder, save_filename)
 
     @classmethod
     def from_only_labelled(cls, feature_network, output_network, batch_size,
-                           data, save_filename, unlabelled_pct=80, max_epochs=20000):
+                           data, save_filename, run_folder=str(dt.datetime.now()), early_stopping=True,
+                           unlabelled_pct=80, max_epochs=20000):
         num_unlabelled = int((unlabelled_pct/100.0)*data.train.num_examples)
         unlabelled_data = DataSet(*data.train.next_batch(num_unlabelled), reshape=False)
         labelled_data = DataSet(*data.train.next_batch(data.train.num_examples-num_unlabelled), reshape=False)
         validation = data.validation
         test = data.test
         return cls(feature_network, output_network, batch_size, unlabelled_data,
-                   labelled_data, validation, test, save_filename, max_epochs)
+                   labelled_data, validation, test, save_filename, run_folder, early_stopping, max_epochs)
 
     @staticmethod
     @gen_utils.ready_generator
@@ -60,32 +70,54 @@ class SelfTaughtTrainer(object):
             new_values = yield stop_cond
             prev_values = new_values_temp
 
+
+
     def run_unsupervised_training(self):
+        self.loss_log = [('training_loss', 'validation_loss', 'validation_reconstruction_loss')]
         stop_for_w = SelfTaughtTrainer.list_of_values_stopping_criterion()
         stop_for_b = SelfTaughtTrainer.list_of_values_stopping_criterion()
+        stop_for_reconstruction_loss = SelfTaughtTrainer.loss_stopping_criterion()
         last_epoch = 0
-        while self._unlabelled.epochs_completed < (self._max_epochs - 19967):
-            self._feature_network.partial_fit(self._unlabelled.next_batch(self._batch_size)[0])
+        validation_loss = 0
+        validation_reconstruction_loss = 0
+        while self._unlabelled.epochs_completed < self._max_epochs:
+            training_loss = self._feature_network.partial_fit(self._unlabelled.next_batch(self._batch_size)[0])
+            self.loss_log.append((training_loss, validation_loss, validation_reconstruction_loss))
 
             if self._unlabelled.epochs_completed > last_epoch:
-                print("{0} Unsupervised Epochs Completed".format(last_epoch))
                 last_epoch = self._unlabelled.epochs_completed
+
+                validation_loss = self._feature_network.loss(self._validation.next_batch(self._validation.num_examples)[0])
+                validation_reconstruction_loss = self._feature_network.reconstruction_loss
+                print("{0} Unsupervised Epochs Completed. Validation loss = {1},"
+                      " reconstruction loss = {2]".format(last_epoch, validation_loss, validation_reconstruction_loss))
+
                 self._feature_network.save(self._save_filename+'_ae_'+str(last_epoch)+'.net')
                 weight_condition = stop_for_w(self._feature_network.weights)
                 bias_condition = stop_for_b(self._feature_network.biases)
+                if self._early_stoppping:
+                    if stop_for_reconstruction_loss(validation_reconstruction_loss):
+                        print('Convergence by Early Stopping Criterion')
                 if weight_condition and bias_condition:
-                        print("Convergence by Stopping Criterion")
+                        print('Convergence by Stopping Criterion')
                         break
         self._after_unsupervised_training()
 
-    def _after_unsupervised_training(self):
-        self._validation_features = []
-        self._validation_labels = []
-
+    def build_validation_features(self):
         validation_batch_input, validation_batch_labels = self._validation.next_batch(self._validation.num_examples)
         self._validation_features = self._feature_network.encoding(validation_batch_input)
         self._validation_labels = validation_batch_labels
 
+    def log_loss(self, filename):
+        loss_logfile = os.path.join(self._run_folder, filename)
+        with open() as loss_logfile:
+            csvwriter = csv.writer(loss_logfile)
+            for row in self.loss_log:
+                csvwriter.writerow(*row)
+
+    def _after_unsupervised_training(self):
+        self.build_validation_features()
+        self.log_loss('unsupervised_log.csv')
 
     @staticmethod
     @gen_utils.ready_generator
@@ -101,29 +133,41 @@ class SelfTaughtTrainer(object):
             prev_loss = one_prev_loss
 
     def run_supervised_training(self):
+        self.loss_log = [('training_loss', 'validation_loss')]
         stop_for = SelfTaughtTrainer.loss_stopping_criterion()
-        prev_epochs = 0
+        last_epoch = 0
+        training_loss = 0
+        validation_loss = 0
         while self._labelled.epochs_completed < self._max_epochs:
             input_batch, output_labels = self._labelled.next_batch(self._batch_size)
             features = self._feature_network.encoding(input_batch)
-            cost = self._output_network.partial_fit(features, output_labels)
+            training_loss = self._output_network.partial_fit(features, output_labels)
+            self.loss_log.append((training_loss, validation_loss))
 
-            if self._labelled.epochs_completed > prev_epochs:
+            if self._labelled.epochs_completed > last_epoch:
                 # TODO Reminder: epoch means one run through all data. Data retrieved in order, must be shuffled.
-                print(prev_epochs, " Supervised Epochs Completed")
-                prev_epochs = self._labelled.epochs_completed
-                self._output_network.save(self._save_filename+'_ffd_'+str(prev_epochs)+'.net')
-                loss_stop = stop_for(self._output_network.loss_on(self._validation_features, self._validation_labels))
+                #       Answer: shuffled by dataset object after every epoch
+                last_epoch = self._labelled.epochs_completed
+                self._output_network.save(self._save_filename+'_ffd_'+str(last_epoch)+'.net')
+                validation_loss = self._output_network.loss_on(self._validation_features, self._validation_labels)
+                print('{0} Supervised Epochs Completed. validation loss ={1}'.format(last_epoch, validation_loss))
+
+                loss_stop = stop_for(validation_loss)
                 if self._output_network.learning_rate < self._learning_rate_limit and loss_stop:
                         print("Convergence by Stopping Criterion")
                         break
         self._after_supervised_training()
 
-    def _after_supervised_training(self):
+    def run_test_data(self):
         test_batch_input, test_batch_labels = self._test.next_batch(self._test.num_examples)
         self._test_features = self._feature_network.encoding(test_batch_input)
         test_output = self._output_network.encoding(self._test_features)
         self._test_accuracy = SelfTaughtTrainer.accuracy(test_output, test_batch_labels)
+
+    def _after_supervised_training(self):
+        self.run_test_data()
+        self.log_loss('supervised_log.csv')
+
 
     @staticmethod
     def accuracy(predictions, labels):

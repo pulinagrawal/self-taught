@@ -6,7 +6,7 @@ tf.set_random_seed(0)
 
 
 class Autoencoder(object):
-    """ Autoencoder (AE) with an sklearn-like interface implemented using TensorFlow.
+    """ Autoencoder (AE) implemented using TensorFlow.
     
     This implementation uses encoders and decoders realized by multi-layer perceptrons.
     Also capable of applying sparse autoencoder with a boolean parameter.
@@ -120,7 +120,7 @@ class Autoencoder(object):
     def _create_loss_optimizer(self, reconstruction_tensor):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
-        reconstruction_loss = tf.nn.l2_loss((reconstruction_tensor-self._x))
+        self.reconstruction_loss = tf.nn.l2_loss((reconstruction_tensor-self._x))
 
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence 
         #     between the desired sparsity and current sparsity in the latent representation
@@ -132,7 +132,7 @@ class Autoencoder(object):
                 if layer is not self._layers[-1]:  # Reconstruction layer should not be sparse
                     latent_loss += self._KL_divergence(layer)
 
-        self.cost = tf.reduce_mean(reconstruction_loss + latent_loss)   # average over batch
+        self.cost = tf.reduce_mean(self.reconstruction_loss + latent_loss)   # average over batch
         # Use ADAM optimizer
         # TODO Make learning rate dynamic
         self.optimizer = \
@@ -162,6 +162,12 @@ class Autoencoder(object):
     def encoding(self, input_tensor):
         """Transform data by mapping it into the latent space."""
         return self._sess.run(self._encoding_layer, feed_dict={self._x: input_tensor})
+
+    def loss(self, input_tensor):
+        return self._sess.run(self.cost, feed_dict={self._x: input_tensor})
+
+    def reconstruction_loss(self, input_tensor):
+        return self._sess.run(self.reconstruction_loss, feed_dict={self._x: input_tensor})
 
     def reconstruct(self, input_tensor):
         """ Use Autoencoder to reconstruct given data. """
