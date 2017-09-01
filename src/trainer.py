@@ -13,7 +13,7 @@ import tensorflow as tf
 
 tf.logging.set_verbosity(tf.logging.INFO)
 LEARNING_RATE_LIMIT = 0.00001
-EPOCH_WINDOW_FOR_STOPPING = 100
+EPOCH_WINDOW_FOR_STOPPING = 200
 
 
 class SelfTaughtTrainer(object):
@@ -106,7 +106,7 @@ class SelfTaughtTrainer(object):
                 print("{0} Unsupervised Epochs Completed. Validation loss = {1},"
                       " reconstruction loss = {2}".format(last_epoch, validation_loss, validation_reconstruction_loss))
 
-                save_dict[last_epoch%100] = (self._save_filename+'_ae_'+str(last_epoch)+'.net', self._feature_network.get_save_state())
+                save_dict[last_epoch%EPOCH_WINDOW_FOR_STOPPING] = (self._save_filename+'_ae_'+str(last_epoch)+'.net', self._feature_network.get_save_state())
                 weight_condition = stop_for_w(self._feature_network.weights)
                 bias_condition = stop_for_b(self._feature_network.biases)
                 reconstruction_loss_condition = stop_for_reconstruction_loss(validation_reconstruction_loss)
@@ -123,8 +123,8 @@ class SelfTaughtTrainer(object):
                     break
 
         for model_number in save_dict:
-            filename = save_dict[model_number]
-            save_state = save_dict[model_number]
+            filename = save_dict[model_number][0]
+            save_state = save_dict[model_number][1]
             self._feature_network.save(filename, save_state)
 
         self._after_unsupervised_training()
@@ -136,7 +136,7 @@ class SelfTaughtTrainer(object):
 
     def log_loss(self, filename):
         loss_logfile = os.path.join(self._run_folder, filename)
-        with open(loss_logfile) as loss_logfile:
+        with open(loss_logfile, 'w') as loss_logfile:
             csvwriter = csv.writer(loss_logfile)
             for row in self.loss_log:
                 csvwriter.writerow(*row)
@@ -187,8 +187,8 @@ class SelfTaughtTrainer(object):
                         break
 
         for model_number in save_dict:
-            filename = save_dict[model_number]
-            save_state = save_dict[model_number]
+            filename = save_dict[model_number][0]
+            save_state = save_dict[model_number][1]
             self._feature_network.save(filename, save_state)
 
         self._after_supervised_training()
