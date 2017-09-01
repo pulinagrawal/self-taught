@@ -117,10 +117,14 @@ class SelfTaughtTrainer(object):
                         break
                 """
                 if (weight_condition and bias_condition) or reconstruction_loss_condition:
-                    print('Convergence by Stopping Criterion')
+                    print('Convergence by Stopping Criterion. weight_cond = {0}, bias_cond = {1}, recons_cond={2}'.format(
+                        weight_condition, bias_condition, reconstruction_loss_condition
+                    ))
                     break
 
-        for filename, save_state in save_dict:
+        for model_number in save_dict:
+            filename = save_dict[model_number]
+            save_state = save_dict[model_number]
             self._feature_network.save(filename, save_state)
 
         self._after_unsupervised_training()
@@ -132,7 +136,7 @@ class SelfTaughtTrainer(object):
 
     def log_loss(self, filename):
         loss_logfile = os.path.join(self._run_folder, filename)
-        with open() as loss_logfile:
+        with open(loss_logfile) as loss_logfile:
             csvwriter = csv.writer(loss_logfile)
             for row in self.loss_log:
                 csvwriter.writerow(*row)
@@ -179,10 +183,12 @@ class SelfTaughtTrainer(object):
 
                 loss_stop = stop_for(validation_loss)
                 if self._output_network.learning_rate < self._learning_rate_limit and loss_stop:
-                        print("Convergence by Stopping Criterion")
+                        print("Convergence by Stopping Criterion. loss_stop = {0}".format(loss_stop))
                         break
 
-        for filename, save_state in save_dict:
+        for model_number in save_dict:
+            filename = save_dict[model_number]
+            save_state = save_dict[model_number]
             self._feature_network.save(filename, save_state)
 
         self._after_supervised_training()
