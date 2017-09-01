@@ -174,7 +174,7 @@ class Autoencoder(object):
         """ Use Autoencoder to reconstruct given data. """
         return self._sess.run(self._layers[-1], feed_dict={self._x: input_tensor})
 
-    def save(self, filename):
+    def get_save_state(self):
         save_list = [{'network_architecture': self._network_architecture,
                       'learning_rate': self.learning_rate,
                       'sparse': self.sparse,
@@ -183,6 +183,20 @@ class Autoencoder(object):
                       'tied_weights': self._tied_weights},
                      self.weights[:len(self.weights)//2],
                      self.biases]
+        return save_list
+
+    def save(self, filename, save_state='current'):
+        if save_state == 'current':
+            save_list = [{'network_architecture': self._network_architecture,
+                          'learning_rate': self.learning_rate,
+                          'sparse': self.sparse,
+                          'sparsity': self.rho,
+                          'transfer_fct': self._transfer_fct,
+                          'tied_weights': self._tied_weights},
+                         self.weights[:len(self.weights)//2],
+                         self.biases]
+        else:
+            save_list = save_state
 
         with open(filename, 'wb') as save_file:
             pickle.dump(save_list, save_file)

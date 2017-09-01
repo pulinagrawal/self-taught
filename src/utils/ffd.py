@@ -148,12 +148,23 @@ class FeedForwardNetwork(object):
         cost = self._sess.run(self.cost, feed_dict={self._x: input_batch, self._y: labels})
         return cost
 
-    def save(self, filename):
+    def get_save_state(self):
         save_list = [{'network_architecture': self._network_architecture,
                       'learning_rate': self.learning_rate,
                       'transfer_fct': self._transfer_fct},
                      self.weights[:len(self.weights)],
                      self.biases]
+        return save_list
+
+    def save(self, filename, save_state='current'):
+        if save_state == 'current':
+            save_list = [{'network_architecture': self._network_architecture,
+                          'learning_rate': self.learning_rate,
+                          'transfer_fct': self._transfer_fct},
+                         self.weights[:len(self.weights)],
+                         self.biases]
+        else:
+            save_list = save_state
 
         with open(filename, 'wb') as save_file:
             pickle.dump(save_list, save_file)

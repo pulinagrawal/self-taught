@@ -13,6 +13,7 @@ import tensorflow as tf
 
 tf.logging.set_verbosity(tf.logging.INFO)
 LEARNING_RATE_LIMIT = 0.00001
+EPOCH_WINDOW_FOR_STOPPING = 100
 
 
 class SelfTaughtTrainer(object):
@@ -70,13 +71,25 @@ class SelfTaughtTrainer(object):
             new_values = yield stop_cond
             prev_values = new_values_temp
 
-
+    @staticmethod
+    @gen_utils.ready_generator
+    def historic_change_stopping_criterion():
+        epoch_window = EPOCH_WINDOW_FOR_STOPPING
+        i = 0
+        stop_cond = False
+        prev_values = {}
+        while True:
+            prev_values[i % epoch_window] = yield stop_cond
+            i = i+1
+            if i > epoch_window:
+                stop_cond = prev_values[i % epoch_window] > prev_values[(i+1) % epoch_window]
 
     def run_unsupervised_training(self):
         self.loss_log = [('training_loss', 'validation_loss', 'validation_reconstruction_loss')]
         stop_for_w = SelfTaughtTrainer.list_of_values_stopping_criterion()
         stop_for_b = SelfTaughtTrainer.list_of_values_stopping_criterion()
-        stop_for_reconstruction_loss = SelfTaughtTrainer.loss_stopping_criterion()
+        stop_for_reconstruction_loss = SelfTaughtTrainer.historic_change_stopping_criterion()
+        save_dict={}
         last_epoch = 0
         validation_loss = 0
         validation_reconstruction_loss = 0
@@ -93,18 +106,23 @@ class SelfTaughtTrainer(object):
                 print("{0} Unsupervised Epochs Completed. Validation loss = {1},"
                       " reconstruction loss = {2}".format(last_epoch, validation_loss, validation_reconstruction_loss))
 
-                self._feature_network.save(self._save_filename+'_ae_'+str(last_epoch)+'.net')
+                save_dict[last_epoch%100] = (self._save_filename+'_ae_'+str(last_epoch)+'.net', self._feature_network.get_save_state())
                 weight_condition = stop_for_w(self._feature_network.weights)
                 bias_condition = stop_for_b(self._feature_network.biases)
+                reconstruction_loss_condition = stop_for_reconstruction_loss(validation_reconstruction_loss)
                 """
                 if self._early_stopping:
                     if stop_for_reconstruction_loss(validation_reconstruction_loss):
                         print('Convergence by Early Stopping Criterion')
                         break
                 """
-                if weight_condition and bias_condition:
-                        print('Convergence by Stopping Criterion')
-                        break
+                if (weight_condition and bias_condition) or reconstruction_loss_condition:
+                    print('Convergence by Stopping Criterion')
+                    break
+
+        for filename, save_state in save_dict:
+            self._feature_network.save(filename, save_state)
+
         self._after_unsupervised_training()
 
     def build_validation_features(self):
@@ -142,6 +160,7 @@ class SelfTaughtTrainer(object):
         last_epoch = 0
         training_loss = 0
         validation_loss = 0
+        save_dict = {}
         while self._labelled.epochs_completed < self._max_epochs:
             input_batch, output_labels = self._labelled.next_batch(self._batch_size)
             features = self._feature_network.encoding(input_batch)
@@ -153,6 +172,8 @@ class SelfTaughtTrainer(object):
                 #       Answer: shuffled by dataset object after every epoch
                 last_epoch = self._labelled.epochs_completed
                 self._output_network.save(self._save_filename+'_ffd_'+str(last_epoch)+'.net')
+
+                save_dict[last_epoch%100] = (self._save_filename+'_ffd_'+str(last_epoch)+'.net', self._output_network.get_save_state())
                 validation_loss = self._output_network.loss_on(self._validation_features, self._validation_labels)
                 print('{0} Supervised Epochs Completed. validation loss ={1}'.format(last_epoch, validation_loss))
 
@@ -160,6 +181,10 @@ class SelfTaughtTrainer(object):
                 if self._output_network.learning_rate < self._learning_rate_limit and loss_stop:
                         print("Convergence by Stopping Criterion")
                         break
+
+        for filename, save_state in save_dict:
+            self._feature_network.save(filename, save_state)
+
         self._after_supervised_training()
 
     def run_test_data(self):
