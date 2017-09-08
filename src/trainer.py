@@ -88,7 +88,7 @@ class SelfTaughtTrainer(object):
         self.loss_log = [('training_loss', 'validation_loss', 'validation_reconstruction_loss')]
         stop_for_w = SelfTaughtTrainer.list_of_values_stopping_criterion()
         stop_for_b = SelfTaughtTrainer.list_of_values_stopping_criterion()
-        stop_for_reconstruction_loss = SelfTaughtTrainer.historic_change_stopping_criterion()
+        stop_for_reconstruction_loss = SelfTaughtTrainer.loss_stopping_criterion()
         save_dict={}
         last_epoch = 0
         validation_loss = 0
@@ -139,7 +139,7 @@ class SelfTaughtTrainer(object):
         with open(loss_logfile, 'w') as loss_logfile:
             csvwriter = csv.writer(loss_logfile)
             for row in self.loss_log:
-                csvwriter.writerow(*row)
+                csvwriter.writerow(row)
 
     def _after_unsupervised_training(self):
         self.build_validation_features()
@@ -183,7 +183,9 @@ class SelfTaughtTrainer(object):
 
                 loss_stop = stop_for(validation_loss)
                 if self._output_network.learning_rate < self._learning_rate_limit and loss_stop:
-                        print("Convergence by Stopping Criterion. loss_stop = {0}".format(loss_stop))
+                        print("Convergence by Stopping Criterion. learning_rate= {0}, loss_stop = {1}".format(
+                                                                                            self._output_network.learning_rate,
+                                                                                            loss_stop))
                         break
 
         for model_number in save_dict:
@@ -226,8 +228,8 @@ class SelfTaughtTrainer(object):
         return self._output_network.encoding(features)
 
 if __name__ == '__main__':
-    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 500, 200]),
-                                                   ffd.FeedForwardNetwork([200, 100, 10]),
+    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 500]),
+                                                   ffd.FeedForwardNetwork([500, 10]),
                                                    100,
                                                    read_data_sets('', one_hot=True),
                                                    save_filename='mnist_self_taught'

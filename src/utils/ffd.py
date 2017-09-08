@@ -92,7 +92,10 @@ class FeedForwardNetwork(object):
         layers = [dict(zip(['weights', 'biases'], _layer))
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
-            current_layer = self._transfer_fct(tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])
+            if i == len(self._network_architecture)-2:
+                current_layer = tf.matmul(prev_layer_output, layer['weights'])+layer['biases']
+            else:
+                current_layer = self._transfer_fct(tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])
             self._layers.append(current_layer)
             if i == len(self._network_architecture)-2:
                 self._encoding_layer = current_layer
@@ -102,7 +105,7 @@ class FeedForwardNetwork(object):
     def _create_loss_optimizer(self, output):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
-        loss = tf.nn.l2_loss((output-self._y))
+        loss = tf.nn.softmax_cross_entropy_with_logits(labels=self._y, logits=output)
 
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence 
         #     between the desired sparsity and current sparsity in the latent representation
@@ -113,7 +116,7 @@ class FeedForwardNetwork(object):
         # TODO Make learning rate dynamic
         self._learning_rate = tf.train.exponential_decay(self._starting_learning_rate, self._global_step, 100, 0.96)
         self.optimizer = \
-            tf.train.AdamOptimizer(learning_rate=self._learning_rate).minimize(self.cost, global_step=self._global_step)
+            tf.train.GradientDescentOptimizer(learning_rate=self._learning_rate).minimize(self.cost, global_step=self._global_step)
 
     def setup(self):
         """Setup a pre-created network with loaded weights and biases"""

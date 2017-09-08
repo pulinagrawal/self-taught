@@ -14,7 +14,7 @@ class Autoencoder(object):
     """
 
     def __init__(self, network_architecture, session=tf.Session(), learning_rate=0.001,
-                 sparse=False, sparsity=0.1, transfer_fct=tf.nn.sigmoid, tied_weights=True):
+                 sparse=False, sparsity=0.1, transfer_fct=tf.nn.relu, tied_weights=True):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
@@ -28,45 +28,74 @@ class Autoencoder(object):
         self.weights = None
         self.biases = None
 
+        #TODO: Serialization maybe possible if the session object is instantiated later.
         # tf Graph input
-        self._x = tf.placeholder(tf.float32, [None, network_architecture[0]])
+        with tf.name_scope('input'):
+            self._x = tf.placeholder(tf.float32, [None, network_architecture[0]], name='input')
         print('batch size', 'x',  network_architecture[0])
 
         # Create autoencoder network
         self._layers = []
         self._create_network()
+
+        for i, weights in enumerate(self._network_weights):
+            if i >= len(self._network_weights)/2:
+
+                for j in range(i+1, len(self._network_weights)):
+                    weights = tf.matmul(weights, self._network_weights[j])
+
+                shape = weights.get_shape()
+                shape = [shape.dims[0].value, shape.dims[1].value]
+                if (shape[1] ** 0.5) - int(shape[1] ** 0.5) == 0:
+                    image = tf.reshape(weights, [shape[0], int(shape[1] ** 0.5), int(shape[1] ** 0.5), 1])
+                else:
+                    image = tf.reshape(weights, [shape[0], shape[1], 1, 1])
+
+                tf.summary.image('hidden{0}_images'.format(len(self._network_weights)-i), image)
+
         # corresponding optimizer
         self._create_loss_optimizer(self._layers[-1])
 
+        self.summary = tf.summary.merge_all()
+        self.train_writer = tf.summary.FileWriter('train_summary', self._sess.graph)
+        self.test_writer = tf.summary.FileWriter('test_summary')
         # Initializing the tensor flow variables
         init = tf.initialize_all_variables()
 
         # Launch the session
         self._sess.run(init)
 
+        self.step = 0
+
     @classmethod
     def _create_tied_weights(cls, *args):
         all_weights = list()
         forward_weights = list()
         prev_units = args[0]
+        layer_num = 0
         for units in args[1:]:
-            weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01))
+            with tf.name_scope('hidden{0}/'.format(layer_num)):
+                weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01), name='weights')
             all_weights.append(weights)
             forward_weights.append(weights)
             print(weights.get_shape())
             prev_units = units
+            layer_num += 1
         for forward_weight in reversed(forward_weights):
-            backward_weight = tf.transpose(forward_weight)
+            with tf.name_scope('hidden{0}/'.format(layer_num)):
+                backward_weight = tf.transpose(forward_weight, name='weights')
             all_weights.append(backward_weight)
             print(backward_weight.get_shape())
+            layer_num += 1
         return all_weights
 
     @classmethod
     def _create_weights(cls, *args):
         all_weights = list()
         prev_units = args[0]
-        for units in args[1:]+list(reversed(args[:-1])):
-            weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01))
+        for layer_num, units in enumerate(args[1:]+list(reversed(args[:-1]))):
+            with tf.name_scope('hidden{0}'.format(layer_num)):
+                weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01), name='weights')
             all_weights.append(weights)
             print(weights.get_shape())
             prev_units = units
@@ -75,12 +104,17 @@ class Autoencoder(object):
     @classmethod
     def _create_biases(cls, *args):
         all_biases = list()
+        layer_num = 0
         for units in args[1:]:
-            all_biases.append(tf.Variable(tf.zeros(units)))
+            with tf.name_scope('hidden{0}/'.format(layer_num)):
+                all_biases.append(tf.Variable(tf.truncated_normal([units], stddev=0.01), name='biases'))
             print(units)
+            layer_num += 1
         for units in reversed(args[:-1]):
-            all_biases.append(tf.Variable(tf.zeros(units)))
+            with tf.name_scope('hidden{0}/'.format(layer_num)):
+                all_biases.append(tf.Variable(tf.truncated_normal([units], stddev=0.01), name='biases'))
             print(units)
+            layer_num += 1
         return all_biases
 
     def _create_network(self):
@@ -99,10 +133,11 @@ class Autoencoder(object):
         layers = [dict(zip(['weights', 'biases'], _layer))
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
-            current_layer = self._transfer_fct(tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])
+            with tf.name_scope('hidden{0}/'.format(i)):
+                current_layer = self._transfer_fct(tf.matmul(prev_layer_output, layer['weights'])+layer['biases'], name='units')
             self._layers.append(current_layer)
             if i == len(self._network_architecture)-2:
-                print("i = ",i,"encoding layer = ", current_layer)
+                print("i = ", i, "encoding layer = ", current_layer)
                 self._encoding_layer = current_layer
             print(prev_layer_output, 'x', layer['weights'], '+', layer['biases'])
             prev_layer_output = current_layer
@@ -120,23 +155,25 @@ class Autoencoder(object):
     def _create_loss_optimizer(self, reconstruction_tensor):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
-        self.reconstruction_loss = tf.nn.l2_loss((reconstruction_tensor-self._x))
+        with tf.name_scope('loss'):
+            self.reconstruction_loss = tf.nn.l2_loss((reconstruction_tensor-self._x), name='reconstruction_loss')
 
-        # 2.) The latent loss, which is defined as the Kullback Leibler divergence 
-        #     between the desired sparsity and current sparsity in the latent representation
-        #     in all hidden layers
-        latent_loss = tf.constant(0.)
+            # 2.) The latent loss, which is defined as the Kullback Leibler divergence
+            #     between the desired sparsity and current sparsity in the latent representation
+            #     in all hidden layers
+            latent_loss = tf.constant(0., name='latent_loss')
 
-        if self.sparse:
-            for layer in self._layers:
-                if layer is not self._layers[-1]:  # Reconstruction layer should not be sparse
-                    latent_loss += self._KL_divergence(layer)
+            if self.sparse:
+                for layer in self._layers:
+                    if layer is not self._layers[-1]:  # Reconstruction layer should not be sparse
+                        latent_loss += self._KL_divergence(layer)
 
-        self.cost = tf.reduce_mean(self.reconstruction_loss + latent_loss)   # average over batch
-        # Use ADAM optimizer
-        # TODO Make learning rate dynamic
-        self.optimizer = \
-            tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
+            self.cost = tf.reduce_mean(self.reconstruction_loss + latent_loss, name='cost')   # average over batch
+            tf.summary.scalar('cost', self.cost)
+            # Use ADAM optimizer
+            # TODO Make learning rate dynamic
+            self.optimizer = \
+                tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate).minimize(self.cost, name='optimizer')
 
     def setup(self):
         """Setup a pre-created network with loaded weights and biases"""
@@ -154,9 +191,11 @@ class Autoencoder(object):
         Return cost of mini-batch.
         """
         # TODO Check mini-batch size and input shape
-        opt, cost, self.weights, self.biases = self._sess.run((self.optimizer, self.cost,
-                                                               self._network_weights, self._network_biases),
-                                                              feed_dict={self._x: input_batch})
+        summary, opt, cost, self.weights, self.biases = self._sess.run((self.summary, self.optimizer, self.cost,
+                                                                        self._network_weights, self._network_biases),
+                                                                       feed_dict={self._x: input_batch})
+        self.train_writer.add_summary(summary, self.step)
+        self.step += 1
         return cost
 
     def encoding(self, input_tensor):
