@@ -13,7 +13,7 @@ class Autoencoder(object):
 
     """
 
-    def __init__(self, network_architecture, session=tf.Session(), learning_rate=0.001,
+    def __init__(self, network_architecture, name='ae', session=tf.Session(), learning_rate=0.001,
                  sparse=False, sparsity=0.1, transfer_fct=tf.nn.relu, tied_weights=True):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
@@ -27,10 +27,11 @@ class Autoencoder(object):
         self._new = True
         self.weights = None
         self.biases = None
+        self._name = name
 
         #TODO: Serialization maybe possible if the session object is instantiated later.
         # tf Graph input
-        with tf.name_scope('input'):
+        with tf.name_scope(self.name+'/input'):
             self._x = tf.placeholder(tf.float32, [None, network_architecture[0]], name='input')
         print('batch size', 'x',  network_architecture[0])
 
@@ -67,14 +68,13 @@ class Autoencoder(object):
 
         self.step = 0
 
-    @classmethod
-    def _create_tied_weights(cls, *args):
+    def _create_tied_weights(self, *args):
         all_weights = list()
         forward_weights = list()
         prev_units = args[0]
         layer_num = 0
         for units in args[1:]:
-            with tf.name_scope('hidden{0}/'.format(layer_num)):
+            with tf.name_scope(self.name+'/hidden{0}/'.format(layer_num)):
                 weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01), name='weights')
             all_weights.append(weights)
             forward_weights.append(weights)
@@ -82,36 +82,34 @@ class Autoencoder(object):
             prev_units = units
             layer_num += 1
         for forward_weight in reversed(forward_weights):
-            with tf.name_scope('hidden{0}/'.format(layer_num)):
+            with tf.name_scope(self.name+'/hidden{0}/'.format(layer_num)):
                 backward_weight = tf.transpose(forward_weight, name='weights')
             all_weights.append(backward_weight)
             print(backward_weight.get_shape())
             layer_num += 1
         return all_weights
 
-    @classmethod
-    def _create_weights(cls, *args):
+    def _create_weights(self, *args):
         all_weights = list()
         prev_units = args[0]
         for layer_num, units in enumerate(args[1:]+list(reversed(args[:-1]))):
-            with tf.name_scope('hidden{0}'.format(layer_num)):
+            with tf.name_scope(self.name+'/hidden{0}'.format(layer_num)):
                 weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01), name='weights')
             all_weights.append(weights)
             print(weights.get_shape())
             prev_units = units
         return all_weights
 
-    @classmethod
-    def _create_biases(cls, *args):
+    def _create_biases(self, *args):
         all_biases = list()
         layer_num = 0
         for units in args[1:]:
-            with tf.name_scope('hidden{0}/'.format(layer_num)):
+            with tf.name_scope(self.name+'/hidden{0}/'.format(layer_num)):
                 all_biases.append(tf.Variable(tf.truncated_normal([units], stddev=0.01), name='biases'))
             print(units)
             layer_num += 1
         for units in reversed(args[:-1]):
-            with tf.name_scope('hidden{0}/'.format(layer_num)):
+            with tf.name_scope(self.name+'/hidden{0}/'.format(layer_num)):
                 all_biases.append(tf.Variable(tf.truncated_normal([units], stddev=0.01), name='biases'))
             print(units)
             layer_num += 1
@@ -120,10 +118,10 @@ class Autoencoder(object):
     def _create_network(self):
         # Initialize autoencoder network weights and biases
         if self._tied_weights:
-            self._network_weights = Autoencoder._create_tied_weights(*self._network_architecture)
+            self._network_weights = self._create_tied_weights(*self._network_architecture)
         else:
-            self._network_weights = Autoencoder._create_weights(*self._network_architecture)
-        self._network_biases = Autoencoder._create_biases(*self._network_architecture)
+            self._network_weights = self._create_weights(*self._network_architecture)
+        self._network_biases = self._create_biases(*self._network_architecture)
         self._hook_em_up()
 
     def _hook_em_up(self):
@@ -133,7 +131,7 @@ class Autoencoder(object):
         layers = [dict(zip(['weights', 'biases'], _layer))
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
-            with tf.name_scope('hidden{0}/'.format(i)):
+            with tf.name_scope(self.name+'/hidden{0}/'.format(i)):
                 current_layer = self._transfer_fct(tf.matmul(prev_layer_output, layer['weights'])+layer['biases'], name='units')
             self._layers.append(current_layer)
             if i == len(self._network_architecture)-2:
@@ -155,7 +153,7 @@ class Autoencoder(object):
     def _create_loss_optimizer(self, reconstruction_tensor):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
-        with tf.name_scope('loss'):
+        with tf.name_scope(self.name+'/loss'):
             self.reconstruction_loss = tf.nn.l2_loss((reconstruction_tensor-self._x), name='reconstruction_loss')
 
             # 2.) The latent loss, which is defined as the Kullback Leibler divergence
