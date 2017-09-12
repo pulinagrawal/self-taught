@@ -13,7 +13,7 @@ class Autoencoder(object):
 
     """
 
-    def __init__(self, network_architecture, name='ae', session=tf.Session(), learning_rate=0.001,
+    def __init__(self, network_architecture, name='ae', learning_rate=0.001,
                  sparse=False, sparsity=0.1, transfer_fct=tf.nn.relu, tied_weights=True):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
@@ -21,52 +21,65 @@ class Autoencoder(object):
         self.learning_rate = learning_rate
         self.sparse = sparse
         self.rho = sparsity
-        self._sess = session
         self._transfer_fct = transfer_fct
         self._tied_weights = tied_weights
         self._new = True
         self.weights = None
         self.biases = None
         self._name = name
+        self.step = 0
 
-        #TODO: Serialization maybe possible if the session object is instantiated later.
-        # tf Graph input
-        with tf.name_scope(self.name+'/input'):
-            self._x = tf.placeholder(tf.float32, [None, network_architecture[0]], name='input')
-        print('batch size', 'x',  network_architecture[0])
+        self.graph = tf.Graph()
+        with self.graph.as_default():
+            #TODO: Serialization maybe possible if the session object is instantiated later.
+            # tf Graph input
+            with tf.name_scope(self._name+'/input'):
+                self._x = tf.placeholder(tf.float32, [None, network_architecture[0]], name='input')
+            print('batch size', 'x',  network_architecture[0])
 
-        # Create autoencoder network
-        self._layers = []
-        self._create_network()
+            # Create autoencoder network
+            self._layers = []
+            self._create_network()
 
-        for i, weights in enumerate(self._network_weights):
-            if i >= len(self._network_weights)/2:
+            for i, weights in enumerate(self._network_weights):
+                if i >= len(self._network_weights)/2:
 
-                for j in range(i+1, len(self._network_weights)):
-                    weights = tf.matmul(weights, self._network_weights[j])
+                    for j in range(i+1, len(self._network_weights)):
+                        weights = tf.matmul(weights, self._network_weights[j])
 
-                shape = weights.get_shape()
-                shape = [shape.dims[0].value, shape.dims[1].value]
-                if (shape[1] ** 0.5) - int(shape[1] ** 0.5) == 0:
-                    image = tf.reshape(weights, [shape[0], int(shape[1] ** 0.5), int(shape[1] ** 0.5), 1])
-                else:
-                    image = tf.reshape(weights, [shape[0], shape[1], 1, 1])
+                    shape = weights.get_shape()
+                    shape = [shape.dims[0].value, shape.dims[1].value]
+                    if (shape[1] ** 0.5) - int(shape[1] ** 0.5) == 0:
+                        image = tf.reshape(weights, [shape[0], int(shape[1] ** 0.5), int(shape[1] ** 0.5), 1])
+                    else:
+                        image = tf.reshape(weights, [shape[0], shape[1], 1, 1])
 
-                tf.summary.image('hidden{0}_images'.format(len(self._network_weights)-i), image)
+                    tf.summary.image('hidden{0}_images'.format(len(self._network_weights)-i), image)
 
-        # corresponding optimizer
-        self._create_loss_optimizer(self._layers[-1])
+            # corresponding optimizer
+            self._create_loss_optimizer(self._layers[-1])
 
-        self.summary = tf.summary.merge_all()
+            self.summary = tf.summary.merge_all()
+
+        self.start_session()
+
+
+
+    def start_session(self):
+        self._sess = tf.Session(graph=self.graph)
+
         self.train_writer = tf.summary.FileWriter('train_summary', self._sess.graph)
         self.test_writer = tf.summary.FileWriter('test_summary')
+
         # Initializing the tensor flow variables
-        init = tf.initialize_all_variables()
+        with self.graph.as_default():
+            init = tf.initialize_all_variables()
 
         # Launch the session
         self._sess.run(init)
 
-        self.step = 0
+    def stop_session(self):
+        self._sess.close()
 
     def _create_tied_weights(self, *args):
         all_weights = list()
@@ -74,7 +87,7 @@ class Autoencoder(object):
         prev_units = args[0]
         layer_num = 0
         for units in args[1:]:
-            with tf.name_scope(self.name+'/hidden{0}/'.format(layer_num)):
+            with tf.name_scope(self._name+'/hidden{0}/'.format(layer_num)):
                 weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01), name='weights')
             all_weights.append(weights)
             forward_weights.append(weights)
@@ -82,7 +95,7 @@ class Autoencoder(object):
             prev_units = units
             layer_num += 1
         for forward_weight in reversed(forward_weights):
-            with tf.name_scope(self.name+'/hidden{0}/'.format(layer_num)):
+            with tf.name_scope(self._name+'/hidden{0}/'.format(layer_num)):
                 backward_weight = tf.transpose(forward_weight, name='weights')
             all_weights.append(backward_weight)
             print(backward_weight.get_shape())
@@ -93,7 +106,7 @@ class Autoencoder(object):
         all_weights = list()
         prev_units = args[0]
         for layer_num, units in enumerate(args[1:]+list(reversed(args[:-1]))):
-            with tf.name_scope(self.name+'/hidden{0}'.format(layer_num)):
+            with tf.name_scope(self._name+'/hidden{0}'.format(layer_num)):
                 weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01), name='weights')
             all_weights.append(weights)
             print(weights.get_shape())
@@ -104,12 +117,12 @@ class Autoencoder(object):
         all_biases = list()
         layer_num = 0
         for units in args[1:]:
-            with tf.name_scope(self.name+'/hidden{0}/'.format(layer_num)):
+            with tf.name_scope(self._name+'/hidden{0}/'.format(layer_num)):
                 all_biases.append(tf.Variable(tf.truncated_normal([units], stddev=0.01), name='biases'))
             print(units)
             layer_num += 1
         for units in reversed(args[:-1]):
-            with tf.name_scope(self.name+'/hidden{0}/'.format(layer_num)):
+            with tf.name_scope(self._name+'/hidden{0}/'.format(layer_num)):
                 all_biases.append(tf.Variable(tf.truncated_normal([units], stddev=0.01), name='biases'))
             print(units)
             layer_num += 1
@@ -131,7 +144,7 @@ class Autoencoder(object):
         layers = [dict(zip(['weights', 'biases'], _layer))
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
-            with tf.name_scope(self.name+'/hidden{0}/'.format(i)):
+            with tf.name_scope(self._name+'/hidden{0}/'.format(i)):
                 current_layer = self._transfer_fct(tf.matmul(prev_layer_output, layer['weights'])+layer['biases'], name='units')
             self._layers.append(current_layer)
             if i == len(self._network_architecture)-2:
@@ -153,7 +166,7 @@ class Autoencoder(object):
     def _create_loss_optimizer(self, reconstruction_tensor):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
-        with tf.name_scope(self.name+'/loss'):
+        with tf.name_scope(self._name+'/loss'):
             self.reconstruction_loss = tf.nn.l2_loss((reconstruction_tensor-self._x), name='reconstruction_loss')
 
             # 2.) The latent loss, which is defined as the Kullback Leibler divergence
@@ -247,3 +260,18 @@ class Autoencoder(object):
             instance.biases = load_list[2]
             instance.setup()
         return instance
+
+    @classmethod
+    def save_pickle(cls, object, filename):
+        with open(filename, 'wb') as file:
+            pickle.dump(object, file)
+
+    @classmethod
+    def load_pickle(cls, filename):
+        with open(filename, 'rb') as file:
+            autoenc = pickle.load(file)
+
+        autoenc.start_session()
+        autoenc.setup()
+
+        return autoenc
