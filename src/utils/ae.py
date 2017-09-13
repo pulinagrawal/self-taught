@@ -30,6 +30,7 @@ class Autoencoder(object):
         self.step = 0
 
         self.graph = tf.Graph()
+        self.summaries = {}
         with self.graph.as_default():
             #TODO: Serialization maybe possible if the session object is instantiated later.
             # tf Graph input
@@ -41,28 +42,29 @@ class Autoencoder(object):
             self._layers = []
             self._create_network()
 
-            for i, weights in enumerate(self._network_weights):
-                if i >= len(self._network_weights)/2:
-
-                    for j in range(i+1, len(self._network_weights)):
-                        weights = tf.matmul(weights, self._network_weights[j])
-
-                    shape = weights.get_shape()
-                    shape = [shape.dims[0].value, shape.dims[1].value]
-                    if (shape[1] ** 0.5) - int(shape[1] ** 0.5) == 0:
-                        image = tf.reshape(weights, [shape[0], int(shape[1] ** 0.5), int(shape[1] ** 0.5), 1])
-                    else:
-                        image = tf.reshape(weights, [shape[0], shape[1], 1, 1])
-
-                    tf.summary.image('hidden{0}_images'.format(len(self._network_weights)-i), image)
-
             # corresponding optimizer
             self._create_loss_optimizer(self._layers[-1])
-
-            self.summary = tf.summary.merge_all()
+            self.summary_feature_images()
+            self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss']])
+            self.summary_images = tf.summary.merge([self.summaries['feature_images']])
 
         self.start_session()
 
+    def summary_feature_images(self, count=3):
+        for i, weights in enumerate(self._network_weights):
+            if i >= len(self._network_weights)/2:
+
+                for j in range(i+1, len(self._network_weights)):
+                    weights = tf.matmul(weights, self._network_weights[j])
+
+                shape = weights.get_shape()
+                shape = [shape.dims[0].value, shape.dims[1].value]
+                if (shape[1] ** 0.5) - int(shape[1] ** 0.5) == 0:
+                    image = tf.reshape(weights, [shape[0], int(shape[1] ** 0.5), int(shape[1] ** 0.5), 1])
+                else:
+                    image = tf.reshape(weights, [shape[0], shape[1], 1, 1])
+
+                self.summaries['feature_images'] = tf.summary.image('hidden{0}_images'.format(len(self._network_weights)-i), image[:count])
 
     def start_session(self):
         self._sess = tf.Session(graph=self.graph)
@@ -196,8 +198,8 @@ class Autoencoder(object):
             #self.latent_loss = tf.Print(self.latent_loss , [self.latent_loss , 'latent_loss '])
 
             self.cost = tf.add(self.reconstruction_loss, self.beta*self.latent_loss, name='cost')   # average over batch
-            tf.summary.scalar('cost', self.cost)
-            tf.summary.scalar('latent_loss', self.latent_loss)
+            self.summaries['cost'] = tf.summary.scalar('cost', self.cost)
+            self.summaries['latent_loss'] = tf.summary.scalar('latent_loss', self.latent_loss)
             # Use ADAM optimizer
             # TODO Make learning rate dynamic
             self.optimizer = \
@@ -219,10 +221,13 @@ class Autoencoder(object):
         Return cost of mini-batch.
         """
         # TODO Check mini-batch size and input shape
-        summary, opt, cost, self.weights, self.biases = self._sess.run((self.summary, self.optimizer, self.cost,
+        summary, summary_images, opt, cost, self.weights, self.biases = self._sess.run((self.summary, self.summary_images,
+                                                                        self.optimizer, self.cost,
                                                                         self._network_weights, self._network_biases),
                                                                        feed_dict={self._x: input_batch})
         self.train_writer.add_summary(summary, self.step)
+        if self.step%500 == 0:
+            self.train_writer.add_summary(summary_images, self.step)
         self.step += 1
         return cost
 
