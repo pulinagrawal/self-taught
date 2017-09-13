@@ -12,9 +12,8 @@ class Autoencoder(object):
     Also capable of applying sparse autoencoder with a boolean parameter.
 
     """
-
-    def __init__(self, network_architecture, name='ae', learning_rate=0.001,
-                 sparse=False, sparsity=0.1, transfer_fct=tf.nn.relu, tied_weights=True):
+    def __init__(self, network_architecture, name='ae', learning_rate=0.00001,
+                 sparse=False, sparsity=0.1, transfer_fct=tf.nn.sigmoid, tied_weights=True):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
@@ -24,6 +23,7 @@ class Autoencoder(object):
         self._transfer_fct = transfer_fct
         self._tied_weights = tied_weights
         self._new = True
+        self.beta = 3
         self.weights = None
         self.biases = None
         self._name = name
@@ -62,7 +62,6 @@ class Autoencoder(object):
             self.summary = tf.summary.merge_all()
 
         self.start_session()
-
 
 
     def start_session(self):
@@ -106,7 +105,7 @@ class Autoencoder(object):
         all_weights = list()
         prev_units = args[0]
         for layer_num, units in enumerate(args[1:]+list(reversed(args[:-1]))):
-            with tf.name_scope(self._name+'/hidden{0}'.format(layer_num)):
+            with tf.name_scope(self._name+'/hidden{0}/'.format(layer_num)):
                 weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01), name='weights')
             all_weights.append(weights)
             print(weights.get_shape())
@@ -118,12 +117,12 @@ class Autoencoder(object):
         layer_num = 0
         for units in args[1:]:
             with tf.name_scope(self._name+'/hidden{0}/'.format(layer_num)):
-                all_biases.append(tf.Variable(tf.truncated_normal([units], stddev=0.01), name='biases'))
+                all_biases.append(tf.Variable(tf.zeros([units]), name='biases'))
             print(units)
             layer_num += 1
         for units in reversed(args[:-1]):
             with tf.name_scope(self._name+'/hidden{0}/'.format(layer_num)):
-                all_biases.append(tf.Variable(tf.truncated_normal([units], stddev=0.01), name='biases'))
+                all_biases.append(tf.Variable(tf.zeros([units]), name='biases'))
             print(units)
             layer_num += 1
         return all_biases
@@ -145,7 +144,10 @@ class Autoencoder(object):
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
             with tf.name_scope(self._name+'/hidden{0}/'.format(i)):
-                current_layer = self._transfer_fct(tf.matmul(prev_layer_output, layer['weights'])+layer['biases'], name='units')
+                if i == len(self._network_architecture)-1:
+                    current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases']), name='units')
+                else:
+                    current_layer = self._transfer_fct(tf.multiply((tf.matmul(prev_layer_output, layer['weights'])+layer['biases']),8), name='units')
             self._layers.append(current_layer)
             if i == len(self._network_architecture)-2:
                 print("i = ", i, "encoding layer = ", current_layer)
@@ -154,33 +156,48 @@ class Autoencoder(object):
             prev_layer_output = current_layer
 
     def _KL_divergence(self, units):
-        rho = tf.constant(self.rho)
-        int_rho = tf.reduce_sum(units, 0)
-        rho_hat = tf.div(int_rho, self.batch_size)
-        rho_inv = tf.constant(1.)-rho
-        rho_hat_inv = tf.constant(1.)-rho_hat
-        kl_term = (rho*tf.log(rho/rho_hat))+(rho_inv*tf.log(rho_inv/rho_hat_inv))
-        kl_div = tf.reduce_sum(kl_term)
-        return kl_div
+        with tf.name_scope(self._name+'/sparse_regularization/'):
+            rho = tf.constant(self.rho, name='rho')
+            rho_hat = units
+            rho_inv = tf.constant(1.)-rho
+            #rho_inv = tf.Print(rho_inv, [rho_inv, tf.shape(rho_inv), 'rho_inv'])
+            rho_hat_inv = tf.constant(1.)-rho_hat
+            #rho_hat_inv = tf.Print(rho_hat_inv, [rho_hat_inv, tf.shape(rho_hat_inv), 'rho_hat_inv'])
+            term1 = rho*tf.log(rho/rho_hat)
+            #term1 = tf.Print(term1, [term1, tf.shape(term1), 'term1'])
+            term2 = rho_inv*tf.log(rho_inv/rho_hat_inv)
+            #term2 = tf.Print(term2 , [term2 , tf.shape(term2 ), 'term2 '])
+            kl_term = term1 + term2
+            #kl_term = tf.Print(kl_term, [kl_term, tf.shape(kl_term), 'kl_term'])
+            kl_div = tf.reduce_sum(kl_term, 1, name='kl_div')
+            #kl_div = tf.Print(kl_div , [kl_div , tf.shape(kl_div ), 'kl_div '])
+            avg_kl_div = tf.reduce_mean(kl_div)
+        return avg_kl_div
 
     def _create_loss_optimizer(self, reconstruction_tensor):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
-        with tf.name_scope(self._name+'/loss'):
-            self.reconstruction_loss = tf.nn.l2_loss((reconstruction_tensor-self._x), name='reconstruction_loss')
+        with tf.name_scope(self._name+'/loss/'):
+            self.reconstruction_loss = tf.reduce_mean(tf.nn.l2_loss(reconstruction_tensor-self._x), name='reconstruction_loss')
 
             # 2.) The latent loss, which is defined as the Kullback Leibler divergence
             #     between the desired sparsity and current sparsity in the latent representation
             #     in all hidden layers
-            latent_loss = tf.constant(0., name='latent_loss')
+            latent_loss = tf.constant(0.)
 
             if self.sparse:
-                for layer in self._layers:
+                for i, layer in enumerate(self._layers):
                     if layer is not self._layers[-1]:  # Reconstruction layer should not be sparse
-                        latent_loss += self._KL_divergence(layer)
+                        latent_loss = tf.add(latent_loss, self._KL_divergence(layer), name='layer{0}_latent_loss'.format(i))
 
-            self.cost = tf.reduce_mean(self.reconstruction_loss + latent_loss, name='cost')   # average over batch
+            self.latent_loss = tf.add(latent_loss, 0, name='latent_loss')
+
+            #self.reconstruction_loss = tf.Print(self.reconstruction_loss, [self.reconstruction_loss, 'reconstruction_loss'])
+            #self.latent_loss = tf.Print(self.latent_loss , [self.latent_loss , 'latent_loss '])
+
+            self.cost = tf.add(self.reconstruction_loss, self.beta*self.latent_loss, name='cost')   # average over batch
             tf.summary.scalar('cost', self.cost)
+            tf.summary.scalar('latent_loss', self.latent_loss)
             # Use ADAM optimizer
             # TODO Make learning rate dynamic
             self.optimizer = \

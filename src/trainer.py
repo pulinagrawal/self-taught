@@ -10,10 +10,12 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 from tensorflow.contrib.learn.python.learn.datasets import base
 import tensorflow as tf
+import math
+
 
 tf.logging.set_verbosity(tf.logging.INFO)
 LEARNING_RATE_LIMIT = 0.00001
-EPOCH_WINDOW_FOR_STOPPING = 200
+EPOCH_WINDOW_FOR_STOPPING = 100
 
 
 class SelfTaughtTrainer(object):
@@ -66,7 +68,7 @@ class SelfTaughtTrainer(object):
             diff_weights = np.subtract(new_values, prev_values)
             pct_change_values = np.absolute(np.divide(diff_weights, np.array(prev_values)))
             max_diff_pct = np.max(np.concatenate([change.flatten() for change in pct_change_values], axis=0))
-            stop_cond = max_diff_pct < .1
+            stop_cond = max_diff_pct < .00001
             # TODO May need a if breaking (so that generator terminates smoothly?)
             new_values = yield stop_cond
             prev_values = new_values_temp
@@ -84,11 +86,27 @@ class SelfTaughtTrainer(object):
             if i > epoch_window:
                 stop_cond = prev_values[i % epoch_window] > prev_values[(i+1) % epoch_window]
 
+    @staticmethod
+    @gen_utils.ready_generator
+    def early_stopping_criterion():
+        patience_window = EPOCH_WINDOW_FOR_STOPPING
+        i = 0
+        stop_cond = False
+        best_value = float('inf')
+        while True:
+            new_value = yield stop_cond
+            i = i+1
+            if i > patience_window:
+                stop_cond = True
+            if new_value < best_value:
+                i = 0
+                best_value = new_value
+
     def run_unsupervised_training(self):
         self.loss_log = [('training_loss', 'validation_loss', 'validation_reconstruction_loss')]
         stop_for_w = SelfTaughtTrainer.list_of_values_stopping_criterion()
         stop_for_b = SelfTaughtTrainer.list_of_values_stopping_criterion()
-        stop_for_reconstruction_loss = SelfTaughtTrainer.loss_stopping_criterion()
+        stop_for_reconstruction_loss = SelfTaughtTrainer.early_stopping_criterion()
         save_dict={}
         last_epoch = 0
         validation_loss = 0
@@ -102,6 +120,7 @@ class SelfTaughtTrainer(object):
 
                 validation_loss, validation_reconstruction_loss = \
                     self._feature_network.loss(self._validation.next_batch(self._validation.num_examples)[0])
+
                 #added logging
                 print("{0} Unsupervised Epochs Completed. Validation loss = {1},"
                       " reconstruction loss = {2}".format(last_epoch, validation_loss, validation_reconstruction_loss))
@@ -228,8 +247,8 @@ class SelfTaughtTrainer(object):
         return self._output_network.encoding(features)
 
 if __name__ == '__main__':
-    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 500]),
-                                                   ffd.FeedForwardNetwork([500, 10]),
+    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 196], sparse=False, learning_rate=0.001),
+                                                   ffd.FeedForwardNetwork([196, 10]),
                                                    100,
                                                    read_data_sets('', one_hot=True),
                                                    save_filename='mnist_self_taught'
