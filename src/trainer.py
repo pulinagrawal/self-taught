@@ -114,11 +114,13 @@ class SelfTaughtTrainer(object):
         validation_loss = 0
         validation_reconstruction_loss = 0
         fig = plt.figure(figsize=(10, 10))
+        start_flag = True
         while self._unlabelled.epochs_completed < self._max_epochs:
             training_loss = self._feature_network.partial_fit(self._unlabelled.next_batch(self._batch_size)[0])
             self.loss_log.append((training_loss, validation_loss, validation_reconstruction_loss))
 
-            if self._unlabelled.epochs_completed > last_epoch:
+            if self._unlabelled.epochs_completed > last_epoch or start_flag:
+                start_flag = False
                 last_epoch = self._unlabelled.epochs_completed
 
                 validation_loss, validation_reconstruction_loss = \
@@ -255,9 +257,9 @@ class SelfTaughtTrainer(object):
         return self._output_network.encoding(features)
 
 if __name__ == '__main__':
-    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 196], sparse=True, learning_rate=0.0001),
+    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 256], sparse=True, learning_rate=0.00001),
                                                    ffd.FeedForwardNetwork([196, 10]),
-                                                   128,
+                                                   100,
                                                    read_data_sets('', one_hot=True),
                                                    save_filename='mnist_self_taught'
                                                    )

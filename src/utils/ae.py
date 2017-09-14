@@ -161,7 +161,7 @@ class Autoencoder(object):
     def _KL_divergence(self, units):
         with tf.name_scope(self._name+'/sparse_regularization/'):
             rho = tf.constant(self.rho, name='rho')
-            rho_hat = units
+            rho_hat = tf.reduce_mean(units, 0)
             self.summaries['avg_rho_hat'] = tf.summary.scalar('avg_rho_hat', tf.reduce_mean(tf.reduce_mean(units, 0)))
             rho_inv = tf.constant(1.)-rho
             #rho_inv = tf.Print(rho_inv, [rho_inv, tf.shape(rho_inv), 'rho_inv'])
@@ -173,7 +173,7 @@ class Autoencoder(object):
             #term2 = tf.Print(term2 , [term2 , tf.shape(term2 ), 'term2 '])
             kl_term = term1 + term2
             #kl_term = tf.Print(kl_term, [kl_term, tf.shape(kl_term), 'kl_term'])
-            kl_div = tf.reduce_sum(kl_term, 1, name='kl_div')
+            kl_div = tf.reduce_sum(kl_term, 0, name='kl_div')
             #kl_div = tf.Print(kl_div , [kl_div , tf.shape(kl_div ), 'kl_div '])
             avg_kl_div = tf.reduce_mean(kl_div)
         return avg_kl_div
