@@ -255,7 +255,7 @@ class SelfTaughtTrainer(object):
         return self._output_network.encoding(features)
 
 if __name__ == '__main__':
-    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 196], sparse=True, learning_rate=0.001),
+    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 196], sparse=True, learning_rate=0.0001),
                                                    ffd.FeedForwardNetwork([196, 10]),
                                                    128,
                                                    read_data_sets('', one_hot=True),

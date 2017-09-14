@@ -43,7 +43,10 @@ class Autoencoder(object):
             # corresponding optimizer
             self._create_loss_optimizer(self._layers[-1])
             self.summary_feature_images()
-            self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss'], self.summaries['avg_rho_hat']])
+            if self.sparse:
+                self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss'], self.summaries['avg_rho_hat']])
+            else:
+                self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss']])
             self.summary_images = tf.summary.merge([self.summaries['feature_images']])
 
         self.start_session()
@@ -106,7 +109,7 @@ class Autoencoder(object):
         prev_units = args[0]
         for layer_num, units in enumerate(args[1:]+list(reversed(args[:-1]))):
             with tf.name_scope(self._name+'/hidden{0}/'.format(layer_num)):
-                weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01), name='weights')
+                weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.1), name='weights')
             all_weights.append(weights)
             print(weights.get_shape())
             prev_units = units
@@ -147,7 +150,7 @@ class Autoencoder(object):
                 if i == len(self._network_architecture)-1:
                     current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases']), name='units')
                 else:
-                    current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases']), name='units')
+                    current_layer = self._transfer_fct(tf.multiply((tf.matmul(prev_layer_output, layer['weights'])+layer['biases']),8), name='units')
             self._layers.append(current_layer)
             if i == len(self._network_architecture)-2:
                 print("i = ", i, "encoding layer = ", current_layer)
