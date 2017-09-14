@@ -2,8 +2,6 @@
 import pickle
 import tensorflow as tf
 
-tf.set_random_seed(0)
-
 
 class Autoencoder(object):
     """ Autoencoder (AE) implemented using TensorFlow.
@@ -23,7 +21,7 @@ class Autoencoder(object):
         self._transfer_fct = transfer_fct
         self._tied_weights = tied_weights
         self._new = True
-        self.beta = 3
+        self.beta = .3
         self.weights = None
         self.biases = None
         self._name = name
@@ -45,7 +43,7 @@ class Autoencoder(object):
             # corresponding optimizer
             self._create_loss_optimizer(self._layers[-1])
             self.summary_feature_images()
-            self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss']])
+            self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss'], self.summaries['avg_rho_hat']])
             self.summary_images = tf.summary.merge([self.summaries['feature_images']])
 
         self.start_session()
@@ -149,7 +147,7 @@ class Autoencoder(object):
                 if i == len(self._network_architecture)-1:
                     current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases']), name='units')
                 else:
-                    current_layer = self._transfer_fct(tf.multiply((tf.matmul(prev_layer_output, layer['weights'])+layer['biases']),8), name='units')
+                    current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases']), name='units')
             self._layers.append(current_layer)
             if i == len(self._network_architecture)-2:
                 print("i = ", i, "encoding layer = ", current_layer)
@@ -161,6 +159,7 @@ class Autoencoder(object):
         with tf.name_scope(self._name+'/sparse_regularization/'):
             rho = tf.constant(self.rho, name='rho')
             rho_hat = units
+            self.summaries['avg_rho_hat'] = tf.summary.scalar('avg_rho_hat', tf.reduce_mean(tf.reduce_mean(units, 0)))
             rho_inv = tf.constant(1.)-rho
             #rho_inv = tf.Print(rho_inv, [rho_inv, tf.shape(rho_inv), 'rho_inv'])
             rho_hat_inv = tf.constant(1.)-rho_hat
@@ -180,7 +179,11 @@ class Autoencoder(object):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
         with tf.name_scope(self._name+'/loss/'):
-            self.reconstruction_loss = tf.reduce_mean(tf.nn.l2_loss(reconstruction_tensor-self._x), name='reconstruction_loss')
+            loss_sub = tf.subtract(reconstruction_tensor,self._x)
+            #loss_sub = tf.Print(loss_sub , [loss_sub , tf.shape(loss_sub ), 'loss_sub'])
+            l2_loss = tf.sqrt(tf.reduce_sum(tf.square(loss_sub), 1))
+            #l2_loss = tf.Print(l2_loss, [l2_loss, tf.shape(l2_loss)], 'l2_loss')
+            self.reconstruction_loss = tf.reduce_mean(l2_loss, name='reconstruction_loss')
 
             # 2.) The latent loss, which is defined as the Kullback Leibler divergence
             #     between the desired sparsity and current sparsity in the latent representation
@@ -198,6 +201,7 @@ class Autoencoder(object):
             #self.latent_loss = tf.Print(self.latent_loss , [self.latent_loss , 'latent_loss '])
 
             self.cost = tf.add(self.reconstruction_loss, self.beta*self.latent_loss, name='cost')   # average over batch
+            #self.cost = self.reconstruction_loss
             self.summaries['cost'] = tf.summary.scalar('cost', self.cost)
             self.summaries['latent_loss'] = tf.summary.scalar('latent_loss', self.latent_loss)
             # Use ADAM optimizer

@@ -10,12 +10,12 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 from tensorflow.contrib.learn.python.learn.datasets import base
 import tensorflow as tf
-import math
-
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 tf.logging.set_verbosity(tf.logging.INFO)
 LEARNING_RATE_LIMIT = 0.00001
-EPOCH_WINDOW_FOR_STOPPING = 100
+EPOCH_WINDOW_FOR_STOPPING = 50
 
 
 class SelfTaughtTrainer(object):
@@ -50,8 +50,10 @@ class SelfTaughtTrainer(object):
                            data, save_filename, run_folder=str(dt.datetime.now()), early_stopping=True,
                            unlabelled_pct=80, max_epochs=20000):
         num_unlabelled = int((unlabelled_pct/100.0)*data.train.num_examples)
-        unlabelled_data = DataSet(*data.train.next_batch(num_unlabelled), reshape=False)
-        labelled_data = DataSet(*data.train.next_batch(data.train.num_examples-num_unlabelled), reshape=False)
+        unlabelled = data.train.next_batch(num_unlabelled)
+        unlabelled_data = DataSet(unlabelled[0], unlabelled[1], reshape=False)
+        labelled = data.train.next_batch(data.train.num_examples-num_unlabelled)
+        labelled_data = DataSet(labelled[0], labelled[1], reshape=False)
         validation = data.validation
         test = data.test
         return cls(feature_network, output_network, batch_size, unlabelled_data,
@@ -111,6 +113,7 @@ class SelfTaughtTrainer(object):
         last_epoch = 0
         validation_loss = 0
         validation_reconstruction_loss = 0
+        fig = plt.figure(figsize=(10, 10))
         while self._unlabelled.epochs_completed < self._max_epochs:
             training_loss = self._feature_network.partial_fit(self._unlabelled.next_batch(self._batch_size)[0])
             self.loss_log.append((training_loss, validation_loss, validation_reconstruction_loss))
@@ -120,10 +123,16 @@ class SelfTaughtTrainer(object):
 
                 validation_loss, validation_reconstruction_loss = \
                     self._feature_network.loss(self._validation.next_batch(self._validation.num_examples)[0])
+                reconstruction = self._feature_network.reconstruct(self._validation.next_batch(100)[0])
 
+                for i in range(100):
+                    ax = fig.add_subplot(10, 10, i + 1)
+                    ax.imshow(reconstruction[i].reshape(28, 28), cmap=cm.gray)
+
+                fig.savefig('reconstruction.png')
                 #added logging
-                print("{0} Unsupervised Epochs Completed. Validation loss = {1},"
-                      " reconstruction loss = {2}".format(last_epoch, validation_loss, validation_reconstruction_loss))
+                print("{0} Unsupervised Epochs Completed. Training_loss = {3}, Validation loss = {1},"
+                      " reconstruction loss = {2}".format(last_epoch, validation_loss, validation_reconstruction_loss, training_loss))
 
                 save_dict[last_epoch%EPOCH_WINDOW_FOR_STOPPING] = (self._save_filename+'_ae_'+str(last_epoch)+'.net', self._feature_network.get_save_state())
                 weight_condition = stop_for_w(self._feature_network.weights)
@@ -181,7 +190,6 @@ class SelfTaughtTrainer(object):
         self.loss_log = [('training_loss', 'validation_loss')]
         stop_for = SelfTaughtTrainer.loss_stopping_criterion()
         last_epoch = 0
-        training_loss = 0
         validation_loss = 0
         save_dict = {}
         while self._labelled.epochs_completed < self._max_epochs:
@@ -247,9 +255,9 @@ class SelfTaughtTrainer(object):
         return self._output_network.encoding(features)
 
 if __name__ == '__main__':
-    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 196], sparse=False, learning_rate=0.001),
+    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 196], sparse=True, learning_rate=0.001),
                                                    ffd.FeedForwardNetwork([196, 10]),
-                                                   100,
+                                                   128,
                                                    read_data_sets('', one_hot=True),
                                                    save_filename='mnist_self_taught'
                                                    )
