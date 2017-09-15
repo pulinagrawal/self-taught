@@ -221,11 +221,11 @@ class Autoencoder(object):
             self.summaries['latent_loss'] = tf.summary.scalar('latent_loss', self.latent_loss)
             # Use ADAM optimizer
             # TODO Make learning rate dynamic
-            self._learning_rate = tf.train.exponential_decay(self.learning_rate, self.global_step, 1000, 0.96)
+            self._learning_rate = self.learning_rate
             self.summaries['beta'] = tf.summary.scalar('beta', self.beta)
             self.summaries['learning_rate'] = tf.summary.scalar('learning_rate', self._learning_rate)
             self.optimizer = \
-                tf.train.GradientDescentOptimizer(learning_rate=self._learning_rate).minimize(self.cost, global_step=self.global_step, name='optimizer')
+                tf.train.GradientDescentOptimizer(learning_rate=self._learning_rate).minimize(self.cost, name='optimizer')
 
     def setup(self):
         """Setup a pre-created network with loaded weights and biases"""
