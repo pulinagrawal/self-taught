@@ -106,8 +106,6 @@ class SelfTaughtTrainer(object):
 
     def run_unsupervised_training(self):
         self.loss_log = [('training_loss', 'validation_loss', 'validation_reconstruction_loss')]
-        stop_for_w = SelfTaughtTrainer.list_of_values_stopping_criterion()
-        stop_for_b = SelfTaughtTrainer.list_of_values_stopping_criterion()
         stop_for_reconstruction_loss = SelfTaughtTrainer.early_stopping_criterion()
         save_dict={}
         last_epoch = 0
@@ -137,8 +135,6 @@ class SelfTaughtTrainer(object):
                       " reconstruction loss = {2}".format(last_epoch, validation_loss, validation_reconstruction_loss, training_loss))
 
                 save_dict[last_epoch%EPOCH_WINDOW_FOR_STOPPING] = (self._save_filename+'_ae_'+str(last_epoch)+'.net', self._feature_network.get_save_state())
-                weight_condition = stop_for_w(self._feature_network.weights)
-                bias_condition = stop_for_b(self._feature_network.biases)
                 reconstruction_loss_condition = stop_for_reconstruction_loss(validation_reconstruction_loss)
                 """
                 if self._early_stopping:
@@ -146,9 +142,9 @@ class SelfTaughtTrainer(object):
                         print('Convergence by Early Stopping Criterion')
                         break
                 """
-                if (weight_condition and bias_condition) or reconstruction_loss_condition:
+                if reconstruction_loss_condition:
                     print('Convergence by Stopping Criterion. weight_cond = {0}, bias_cond = {1}, recons_cond={2}'.format(
-                        weight_condition, bias_condition, reconstruction_loss_condition
+                        1, 1, reconstruction_loss_condition
                     ))
                     break
 
@@ -257,7 +253,7 @@ class SelfTaughtTrainer(object):
         return self._output_network.encoding(features)
 
 if __name__ == '__main__':
-    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 256], sparse=True, learning_rate=0.00001),
+    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 196], sparse=True, learning_rate=0.001),
                                                    ffd.FeedForwardNetwork([196, 10]),
                                                    100,
                                                    read_data_sets('', one_hot=True),

@@ -11,7 +11,7 @@ class Autoencoder(object):
 
     """
     def __init__(self, network_architecture, name='ae', learning_rate=0.00001,
-                 sparse=False, sparsity=0.1, transfer_fct=tf.nn.sigmoid, tied_weights=True):
+                 sparse=False, sparsity=0.1, transfer_fct=tf.nn.sigmoid, tied_weights=False):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
@@ -21,15 +21,17 @@ class Autoencoder(object):
         self._transfer_fct = transfer_fct
         self._tied_weights = tied_weights
         self._new = True
-        self.beta = .3
         self.weights = None
         self.biases = None
         self._name = name
         self.step = 0
+        self.lambda_ = .003
+        self.beta = 3
 
         self.graph = tf.Graph()
         self.summaries = {}
         with self.graph.as_default():
+            self.global_step = tf.Variable(0, trainable=False)
             #TODO: Serialization maybe possible if the session object is instantiated later.
             # tf Graph input
             with tf.name_scope(self._name+'/input'):
@@ -44,9 +46,11 @@ class Autoencoder(object):
             self._create_loss_optimizer(self._layers[-1])
             self.summary_feature_images()
             if self.sparse:
-                self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss'], self.summaries['avg_rho_hat']])
+                self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss'], self.summaries['beta'],
+                                                 self.summaries['learning_rate'], self.summaries['avg_rho_hat']])
             else:
-                self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss']])
+                self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss'], self.summaries['beta'],
+                                                 self.summaries['learning_rate']])
             self.summary_images = tf.summary.merge([self.summaries['feature_images']])
 
         self.start_session()
@@ -107,9 +111,11 @@ class Autoencoder(object):
     def _create_weights(self, *args):
         all_weights = list()
         prev_units = args[0]
-        for layer_num, units in enumerate(args[1:]+list(reversed(args[:-1]))):
+        print(list(args[1:]))
+        print(list(reversed(args[:-1])))
+        for layer_num, units in enumerate(list(args[1:])+list(reversed(args[:-1]))):
             with tf.name_scope(self._name+'/hidden{0}/'.format(layer_num)):
-                weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.1), name='weights')
+                weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01), name='weights')
             all_weights.append(weights)
             print(weights.get_shape())
             prev_units = units
@@ -147,10 +153,7 @@ class Autoencoder(object):
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
             with tf.name_scope(self._name+'/hidden{0}/'.format(i)):
-                if i == len(self._network_architecture)-1:
-                    current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases']), name='units')
-                else:
-                    current_layer = self._transfer_fct(tf.multiply((tf.matmul(prev_layer_output, layer['weights'])+layer['biases']),8), name='units')
+                    current_layer = self._transfer_fct(tf.matmul(prev_layer_output, layer['weights'])+layer['biases'], name='units')
             self._layers.append(current_layer)
             if i == len(self._network_architecture)-2:
                 print("i = ", i, "encoding layer = ", current_layer)
@@ -162,6 +165,7 @@ class Autoencoder(object):
         with tf.name_scope(self._name+'/sparse_regularization/'):
             rho = tf.constant(self.rho, name='rho')
             rho_hat = tf.reduce_mean(units, 0)
+            #rho_hat = tf.Print(rho_hat, [rho_hat, tf.shape(rho_hat), 'rho_hat'])
             self.summaries['avg_rho_hat'] = tf.summary.scalar('avg_rho_hat', tf.reduce_mean(tf.reduce_mean(units, 0)))
             rho_inv = tf.constant(1.)-rho
             #rho_inv = tf.Print(rho_inv, [rho_inv, tf.shape(rho_inv), 'rho_inv'])
@@ -203,14 +207,25 @@ class Autoencoder(object):
             #self.reconstruction_loss = tf.Print(self.reconstruction_loss, [self.reconstruction_loss, 'reconstruction_loss'])
             #self.latent_loss = tf.Print(self.latent_loss , [self.latent_loss , 'latent_loss '])
 
-            self.cost = tf.add(self.reconstruction_loss, self.beta*self.latent_loss, name='cost')   # average over batch
+            weight_loss = tf.constant(0.)
+
+            for i, weights in enumerate(self._network_weights):
+                if weights is not self._network_weights[-1]:
+                    weight_loss = weight_loss + tf.reduce_sum(tf.square(weights))
+
+            self.weight_loss = tf.add(weight_loss, 0, name='weight_loss')
+
+            self.cost = tf.add(tf.add(self.reconstruction_loss, (self.lambda_/2)*self.weight_loss), self.beta*self.latent_loss, name='cost')   # average over batch
             #self.cost = self.reconstruction_loss
             self.summaries['cost'] = tf.summary.scalar('cost', self.cost)
             self.summaries['latent_loss'] = tf.summary.scalar('latent_loss', self.latent_loss)
             # Use ADAM optimizer
             # TODO Make learning rate dynamic
+            self._learning_rate = tf.train.exponential_decay(self.learning_rate, self.global_step, 1000, 0.96)
+            self.summaries['beta'] = tf.summary.scalar('beta', self.beta)
+            self.summaries['learning_rate'] = tf.summary.scalar('learning_rate', self._learning_rate)
             self.optimizer = \
-                tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate).minimize(self.cost, name='optimizer')
+                tf.train.GradientDescentOptimizer(learning_rate=self._learning_rate).minimize(self.cost, global_step=self.global_step, name='optimizer')
 
     def setup(self):
         """Setup a pre-created network with loaded weights and biases"""
