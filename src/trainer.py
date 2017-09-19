@@ -52,8 +52,12 @@ class SelfTaughtTrainer(object):
         num_unlabelled = int((unlabelled_pct/100.0)*data.train.num_examples)
         unlabelled = data.train.next_batch(num_unlabelled)
         unlabelled_data = DataSet(unlabelled[0], unlabelled[1], reshape=False)
+        #TODO Probablu Only for mnist data - Dataset initializer scales data by 1/255
+        unlabelled_data._images = unlabelled[0]
         labelled = data.train.next_batch(data.train.num_examples-num_unlabelled)
         labelled_data = DataSet(labelled[0], labelled[1], reshape=False)
+        #TODO Probablu Only for mnist data - Dataset initializer scales data by 1/255
+        labelled_data._images = labelled[0]
         validation = data.validation
         test = data.test
         return cls(feature_network, output_network, batch_size, unlabelled_data,

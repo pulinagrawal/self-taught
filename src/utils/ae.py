@@ -10,7 +10,7 @@ class Autoencoder(object):
     Also capable of applying sparse autoencoder with a boolean parameter.
 
     """
-    def __init__(self, network_architecture, name='ae', learning_rate=0.00001,
+    def __init__(self, network_architecture, name='ae', learning_rate=0.001,
                  sparse=False, sparsity=0.1, transfer_fct=tf.nn.sigmoid, tied_weights=False):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
@@ -25,8 +25,8 @@ class Autoencoder(object):
         self.biases = None
         self._name = name
         self.step = 0
-        self.lambda_ = .003
-        self.beta = 3
+        self.lambda_ = 0.003
+        self.beta = 1
 
         self.graph = tf.Graph()
         self.summaries = {}
@@ -166,7 +166,7 @@ class Autoencoder(object):
             rho = tf.constant(self.rho, name='rho')
             rho_hat = tf.reduce_mean(units, 0)
             #rho_hat = tf.Print(rho_hat, [rho_hat, tf.shape(rho_hat), 'rho_hat'])
-            self.summaries['avg_rho_hat'] = tf.summary.scalar('avg_rho_hat', tf.reduce_mean(tf.reduce_mean(units, 0)))
+            self.summaries['avg_rho_hat'] = tf.summary.scalar('avg_rho_hat', tf.reduce_mean(rho_hat))
             rho_inv = tf.constant(1.)-rho
             #rho_inv = tf.Print(rho_inv, [rho_inv, tf.shape(rho_inv), 'rho_inv'])
             rho_hat_inv = tf.constant(1.)-rho_hat
@@ -179,8 +179,7 @@ class Autoencoder(object):
             #kl_term = tf.Print(kl_term, [kl_term, tf.shape(kl_term), 'kl_term'])
             kl_div = tf.reduce_sum(kl_term, 0, name='kl_div')
             #kl_div = tf.Print(kl_div , [kl_div , tf.shape(kl_div ), 'kl_div '])
-            avg_kl_div = tf.reduce_mean(kl_div)
-        return avg_kl_div
+        return kl_div
 
     def _create_loss_optimizer(self, reconstruction_tensor):
         # The loss is composed of two terms:
@@ -225,7 +224,7 @@ class Autoencoder(object):
             self.summaries['beta'] = tf.summary.scalar('beta', self.beta)
             self.summaries['learning_rate'] = tf.summary.scalar('learning_rate', self._learning_rate)
             self.optimizer = \
-                tf.train.GradientDescentOptimizer(learning_rate=self._learning_rate).minimize(self.cost, name='optimizer')
+                tf.train.RMSPropOptimizer(learning_rate=self._learning_rate).minimize(self.cost, name='optimizer')
 
     def setup(self):
         """Setup a pre-created network with loaded weights and biases"""
