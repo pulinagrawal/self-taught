@@ -146,9 +146,7 @@ class SelfTaughtTrainer(object):
                         break
                 """
                 if reconstruction_loss_condition:
-                    print('Convergence by Stopping Criterion. weight_cond = {0}, bias_cond = {1}, recons_cond={2}'.format(
-                        1, 1, reconstruction_loss_condition
-                    ))
+                    print('Convergence by Stopping Criterion. recons_cond={2}'.format(reconstruction_loss_condition))
                     break
 
         self._after_unsupervised_training()
@@ -172,7 +170,7 @@ class SelfTaughtTrainer(object):
             for row in self.loss_log:
                 csvwriter.writerow(row)
 
-    def after_unsupervised_training(self):
+    def _after_unsupervised_training(self):
         self.build_validation_features()
         self.log_loss('unsupervised_log.csv')
         self.save_feature_models()
@@ -226,7 +224,7 @@ class SelfTaughtTrainer(object):
             save_state = save_dict[model_number][1]
             self._feature_network.save(filename, save_state)
 
-        self.after_supervised_training()
+        self._after_supervised_training()
         return self._test_accuracy
 
     def run_test_data(self):
@@ -235,7 +233,7 @@ class SelfTaughtTrainer(object):
         test_output = self._output_network.encoding(self._test_features)
         self._test_accuracy = SelfTaughtTrainer.accuracy(test_output, test_batch_labels)
 
-    def after_supervised_training(self):
+    def _after_supervised_training(self):
         self.run_test_data()
         self.log_loss('supervised_log.csv')
 
