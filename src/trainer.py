@@ -122,34 +122,38 @@ class SelfTaughtTrainer(object):
         validation_loss = 0
         validation_reconstruction_loss = 0
         start_flag = True
-        while self._unlabelled.epochs_completed < self._max_epochs:
-            training_loss = self._feature_network.partial_fit(self._unlabelled.next_batch(self._batch_size)[0])
-            self.loss_log.append((training_loss, validation_loss, validation_reconstruction_loss))
+        try:
+            while self._unlabelled.epochs_completed < self._max_epochs:
+                training_loss = self._feature_network.partial_fit(self._unlabelled.next_batch(self._batch_size)[0])
+                self.loss_log.append((training_loss, validation_loss, validation_reconstruction_loss))
 
-            if self._unlabelled.epochs_completed > last_epoch or start_flag:
-                start_flag = False
-                last_epoch = self._unlabelled.epochs_completed
+                if self._unlabelled.epochs_completed > last_epoch or start_flag:
+                    start_flag = False
+                    last_epoch = self._unlabelled.epochs_completed
 
-                validation_loss, validation_reconstruction_loss = \
-                    self._feature_network.loss(self._validation.next_batch(self._validation.num_examples)[0])
-                reconstruction = self._feature_network.reconstruct(self._validation.next_batch(100)[0])
+                    validation_loss, validation_reconstruction_loss = \
+                        self._feature_network.loss(self._validation.next_batch(self._validation.num_examples)[0])
+                    reconstruction = self._feature_network.reconstruct(self._validation.next_batch(100)[0])
 
-                print("{0} Unsupervised Epochs Completed. Training_loss = {3}, Validation loss = {1},"
-                      " reconstruction loss = {2}".format(last_epoch, validation_loss, validation_reconstruction_loss, training_loss))
+                    print("{0} Unsupervised Epochs Completed. Training_loss = {3}, Validation loss = {1},"
+                          " reconstruction loss = {2}".format(last_epoch, validation_loss, validation_reconstruction_loss, training_loss))
 
-                self.save_dict[last_epoch % self._epoch_window_for_stopping] = (self._save_filename+'_ae_'+str(last_epoch)+'.net', self._feature_network.get_save_state())
-                reconstruction_loss_condition = stop_for_reconstruction_loss(validation_reconstruction_loss)
-                """
-                if self._early_stopping:
-                    if stop_for_reconstruction_loss(validation_reconstruction_loss):
-                        print('Convergence by Early Stopping Criterion')
+                    self.save_dict[last_epoch % self._epoch_window_for_stopping] = (self._save_filename+'_ae_'+str(last_epoch)+'.net', self._feature_network.get_save_state())
+                    reconstruction_loss_condition = stop_for_reconstruction_loss(validation_reconstruction_loss)
+                    """
+                    if self._early_stopping:
+                        if stop_for_reconstruction_loss(validation_reconstruction_loss):
+                            print('Convergence by Early Stopping Criterion')
+                            break
+                    """
+                    if reconstruction_loss_condition:
+                        print('Convergence by Stopping Criterion. recons_cond={2}'.format(reconstruction_loss_condition))
                         break
-                """
-                if reconstruction_loss_condition:
-                    print('Convergence by Stopping Criterion. recons_cond={2}'.format(reconstruction_loss_condition))
-                    break
-
-        self._after_unsupervised_training()
+        finally:
+            try:
+                self._after_unsupervised_training()
+            finally:
+                self.save_feature_models()
         return validation_reconstruction_loss
 
     def save_feature_models(self):
