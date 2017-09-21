@@ -147,7 +147,7 @@ class SelfTaughtTrainer(object):
                             break
                     """
                     if reconstruction_loss_condition:
-                        print('Convergence by Stopping Criterion. recons_cond={2}'.format(reconstruction_loss_condition))
+                        print('Convergence by Stopping Criterion. recons_cond={0}'.format(reconstruction_loss_condition))
                         break
         finally:
             try:
