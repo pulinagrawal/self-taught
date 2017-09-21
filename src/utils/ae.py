@@ -11,7 +11,8 @@ class Autoencoder(object):
 
     """
     def __init__(self, network_architecture, name='ae', learning_rate=0.001,
-                 sparse=False, sparsity=0.1, transfer_fct=tf.nn.sigmoid, tied_weights=False):
+                 sparse=False, sparsity=0.1, transfer_fct=tf.nn.sigmoid, beta=3, step=0,
+                 reconstruction_batch_size=100, lambda_=0.003, tied_weights=True, logdir='summary'):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
@@ -24,9 +25,11 @@ class Autoencoder(object):
         self.weights = None
         self.biases = None
         self._name = name
-        self.step = 0
-        self.lambda_ = 0.003
-        self.beta = 1
+        self.step = step
+        self.lambda_ = lambda_
+        self.beta = beta
+        self.logdir = logdir
+        self._reconstruction_batch_size = reconstruction_batch_size
 
         self.graph = tf.Graph()
         self.summaries = {}
@@ -38,22 +41,45 @@ class Autoencoder(object):
                 self._x = tf.placeholder(tf.float32, [None, network_architecture[0]], name='input')
             print('batch size', 'x',  network_architecture[0])
 
+            recon_batch_size = tf.constant(self._reconstruction_batch_size)
+
             # Create autoencoder network
             self._layers = []
             self._create_network()
 
             # corresponding optimizer
             self._create_loss_optimizer(self._layers[-1])
-            self.summary_feature_images()
+
             if self.sparse:
                 self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss'], self.summaries['beta'],
                                                  self.summaries['learning_rate'], self.summaries['avg_rho_hat']])
             else:
                 self.summary = tf.summary.merge([self.summaries['cost'], self.summaries['latent_loss'], self.summaries['beta'],
                                                  self.summaries['learning_rate']])
-            self.summary_images = tf.summary.merge([self.summaries['feature_images']])
 
+            with tf.name_scope(self._name+'/reconstruction/'):
+                output_image = self.reshape_tensor_for_display(self._layers[-1], recon_batch_size)
+                input_image = self.reshape_tensor_for_display(self._x, recon_batch_size)
+                self.summaries['reconstructed_image'] = tf.summary.image('reconstructed_images', output_image)
+                self.summaries['input_image'] = tf.summary.image('input_images', input_image)
+                self.summary_feature_images()
+                self.image_summaries = tf.summary.merge([self.summaries['reconstructed_image'],
+                                                         self.summaries['input_image'],
+                                                         self.summaries['feature_images']
+                                                         ])
         self.start_session()
+
+    def reshape_tensor_for_display(self, tensor, batch_size='default'):
+        shape = tensor.get_shape()
+        shape = [shape.dims[0].value, shape.dims[1].value]
+        if batch_size == 'default':
+            batch_size = shape[0]
+        if (shape[1] ** 0.5) - int(shape[1] ** 0.5) == 0:
+            image = tf.reshape(tensor, [batch_size, int(shape[1] ** 0.5), int(shape[1] ** 0.5), 1])
+        else:
+            image = tf.reshape(tensor, [batch_size, shape[1], 1, 1])
+
+        return image
 
     def summary_feature_images(self, count=3):
         for i, weights in enumerate(self._network_weights):
@@ -62,20 +88,14 @@ class Autoencoder(object):
                 for j in range(i+1, len(self._network_weights)):
                     weights = tf.matmul(weights, self._network_weights[j])
 
-                shape = weights.get_shape()
-                shape = [shape.dims[0].value, shape.dims[1].value]
-                if (shape[1] ** 0.5) - int(shape[1] ** 0.5) == 0:
-                    image = tf.reshape(weights, [shape[0], int(shape[1] ** 0.5), int(shape[1] ** 0.5), 1])
-                else:
-                    image = tf.reshape(weights, [shape[0], shape[1], 1, 1])
+                image = self.reshape_tensor_for_display(weights)
 
                 self.summaries['feature_images'] = tf.summary.image('hidden{0}_images'.format(len(self._network_weights)-i), image[:count])
 
     def start_session(self):
         self._sess = tf.Session(graph=self.graph)
 
-        self.train_writer = tf.summary.FileWriter('train_summary', self._sess.graph)
-        self.test_writer = tf.summary.FileWriter('test_summary')
+        self.train_writer = tf.summary.FileWriter(self.logdir, self._sess.graph)
 
         # Initializing the tensor flow variables
         with self.graph.as_default():
@@ -185,11 +205,13 @@ class Autoencoder(object):
         # The loss is composed of two terms:
         # 1.) The reconstruction loss
         with tf.name_scope(self._name+'/loss/'):
-            loss_sub = tf.subtract(reconstruction_tensor,self._x)
+            loss_sub = tf.subtract(reconstruction_tensor, self._x)
             #loss_sub = tf.Print(loss_sub , [loss_sub , tf.shape(loss_sub ), 'loss_sub'])
-            l2_loss = tf.sqrt(tf.reduce_sum(tf.square(loss_sub), 1))
+            l2_loss = tf.reduce_sum(tf.square(loss_sub), 1)
             #l2_loss = tf.Print(l2_loss, [l2_loss, tf.shape(l2_loss)], 'l2_loss')
             self.reconstruction_loss = tf.reduce_mean(l2_loss, name='reconstruction_loss')
+            #self.reconstruction_loss = tf.nn.l2_loss(loss_sub, name='reconstruction_loss')
+            #self.reconstruction_loss = tf.Print(self.reconstruction_loss, [self.reconstruction_loss, 'self.reconstruction_loss '])
 
             # 2.) The latent loss, which is defined as the Kullback Leibler divergence
             #     between the desired sparsity and current sparsity in the latent representation
@@ -203,7 +225,6 @@ class Autoencoder(object):
 
             self.latent_loss = tf.add(latent_loss, 0, name='latent_loss')
 
-            #self.reconstruction_loss = tf.Print(self.reconstruction_loss, [self.reconstruction_loss, 'reconstruction_loss'])
             #self.latent_loss = tf.Print(self.latent_loss , [self.latent_loss , 'latent_loss '])
 
             weight_loss = tf.constant(0.)
@@ -213,6 +234,7 @@ class Autoencoder(object):
                     weight_loss = weight_loss + tf.reduce_sum(tf.square(weights))
 
             self.weight_loss = tf.add(weight_loss, 0, name='weight_loss')
+            #self.weight_loss = tf.Print(self.weight_loss, [self.weight_loss , 'weight_loss '])
 
             self.cost = tf.add(tf.add(self.reconstruction_loss, (self.lambda_/2)*self.weight_loss), self.beta*self.latent_loss, name='cost')   # average over batch
             #self.cost = self.reconstruction_loss
@@ -242,13 +264,11 @@ class Autoencoder(object):
         Return cost of mini-batch.
         """
         # TODO Check mini-batch size and input shape
-        summary, summary_images, opt, cost, self.weights, self.biases = self._sess.run((self.summary, self.summary_images,
+        summary, opt, cost, self.weights, self.biases = self._sess.run((self.summary,
                                                                         self.optimizer, self.cost,
                                                                         self._network_weights, self._network_biases),
                                                                        feed_dict={self._x: input_batch})
         self.train_writer.add_summary(summary, self.step)
-        if self.step%500 == 0:
-            self.train_writer.add_summary(summary_images, self.step)
         self.step += 1
         return cost
 
@@ -265,7 +285,11 @@ class Autoencoder(object):
 
     def reconstruct(self, input_tensor):
         """ Use Autoencoder to reconstruct given data. """
-        return self._sess.run(self._layers[-1], feed_dict={self._x: input_tensor})
+        reconstruction, reconstruction_summary = self._sess.run((self._layers[-1], self.image_summaries),
+                                                                feed_dict={self._x: input_tensor})
+        self.train_writer.add_summary(reconstruction_summary, self.step)
+        return reconstruction
+
 
     def get_save_state(self):
         save_list = [{'network_architecture': self._network_architecture,
@@ -273,6 +297,10 @@ class Autoencoder(object):
                       'sparse': self.sparse,
                       'sparsity': self.rho,
                       'transfer_fct': self._transfer_fct,
+                      'lambda_': self.lambda_,
+                      'beta': self.beta,
+                      'step': self.step,
+                      'logdir': self.logdir,
                       'tied_weights': self._tied_weights},
                      self.weights[:len(self.weights)//2],
                      self.biases]
@@ -280,14 +308,7 @@ class Autoencoder(object):
 
     def save(self, filename, save_state='current'):
         if save_state == 'current':
-            save_list = [{'network_architecture': self._network_architecture,
-                          'learning_rate': self.learning_rate,
-                          'sparse': self.sparse,
-                          'sparsity': self.rho,
-                          'transfer_fct': self._transfer_fct,
-                          'tied_weights': self._tied_weights},
-                         self.weights[:len(self.weights)//2],
-                         self.biases]
+            save_list = self.get_save_state()
         else:
             save_list = save_state
 
@@ -295,9 +316,11 @@ class Autoencoder(object):
             pickle.dump(save_list, save_file)
 
     @classmethod
-    def load_model(cls, filename):
+    def load_model(cls, filename, logdir='original'):
         with open(filename, 'rb') as load_file:
             load_list = pickle.load(load_file, encoding='latin1')
+            if logdir != 'original':
+                load_list[0]['logdir'] = logdir
             instance = cls(**load_list[0])
             instance.weights = load_list[1]
             instance.biases = load_list[2]

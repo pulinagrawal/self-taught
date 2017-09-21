@@ -15,7 +15,6 @@ import matplotlib.cm as cm
 
 tf.logging.set_verbosity(tf.logging.INFO)
 LEARNING_RATE_LIMIT = 0.00001
-EPOCH_WINDOW_FOR_STOPPING = 50
 
 
 class SelfTaughtTrainer(object):
@@ -25,8 +24,8 @@ class SelfTaughtTrainer(object):
     network object."""
 
     def __init__(self, feature_network, output_network, batch_size,
-                 unlabelled, labelled, validation, test, save_filename, run_folder=str(dt.datetime.now()),
-                 early_stopping=True, max_epochs=20000):
+                 unlabelled, labelled, validation, test, save_filename, run_folder=None,
+                 early_stopping=True, epoch_window_for_stopping=25, max_epochs=20000):
         self._unlabelled = unlabelled
         print("Unlabelled Examples", self._unlabelled.num_examples)
         self._labelled = labelled
@@ -40,15 +39,22 @@ class SelfTaughtTrainer(object):
         self._max_epochs = max_epochs
         self._batch_size = batch_size
         self._early_stopping = early_stopping
+        self._epoch_window_for_stopping = epoch_window_for_stopping
         self._learning_rate_limit = LEARNING_RATE_LIMIT
-        self._run_folder = run_folder.replace(' ', '_').replace(':', '-').replace('.', '-')
-        os.mkdir(self._run_folder)
+        self._run_folder = run_folder
+        if run_folder is None:
+            timestamp = str(dt.datetime.now())
+            self._run_folder = timestamp.replace(' ', '_').replace(':', '-').replace('.', '-')
+        if not os.path.exists(self._run_folder):
+            os.mkdir(self._run_folder)
         self._save_filename = os.path.join(self._run_folder, save_filename)
+
+        self.save_dict={}
 
     @classmethod
     def from_only_labelled(cls, feature_network, output_network, batch_size,
                            data, save_filename, run_folder=str(dt.datetime.now()), early_stopping=True,
-                           unlabelled_pct=80, max_epochs=20000):
+                           epoch_window_for_stopping=25, unlabelled_pct=80, max_epochs=20000):
         num_unlabelled = int((unlabelled_pct/100.0)*data.train.num_examples)
         unlabelled = data.train.next_batch(num_unlabelled)
         unlabelled_data = DataSet(unlabelled[0], unlabelled[1], reshape=False)
@@ -61,7 +67,8 @@ class SelfTaughtTrainer(object):
         validation = data.validation
         test = data.test
         return cls(feature_network, output_network, batch_size, unlabelled_data,
-                   labelled_data, validation, test, save_filename, run_folder, early_stopping, max_epochs)
+                   labelled_data, validation, test, save_filename, run_folder,
+                   early_stopping, epoch_window_for_stopping, max_epochs)
 
     @staticmethod
     @gen_utils.ready_generator
@@ -81,8 +88,8 @@ class SelfTaughtTrainer(object):
 
     @staticmethod
     @gen_utils.ready_generator
-    def historic_change_stopping_criterion():
-        epoch_window = EPOCH_WINDOW_FOR_STOPPING
+    def historic_change_stopping_criterion(window):
+        epoch_window = window
         i = 0
         stop_cond = False
         prev_values = {}
@@ -94,8 +101,8 @@ class SelfTaughtTrainer(object):
 
     @staticmethod
     @gen_utils.ready_generator
-    def early_stopping_criterion():
-        patience_window = EPOCH_WINDOW_FOR_STOPPING
+    def early_stopping_criterion(window):
+        patience_window = window
         i = 0
         stop_cond = False
         best_value = float('inf')
@@ -110,12 +117,10 @@ class SelfTaughtTrainer(object):
 
     def run_unsupervised_training(self):
         self.loss_log = [('training_loss', 'validation_loss', 'validation_reconstruction_loss')]
-        stop_for_reconstruction_loss = SelfTaughtTrainer.early_stopping_criterion()
-        save_dict={}
+        stop_for_reconstruction_loss = SelfTaughtTrainer.early_stopping_criterion(self._epoch_window_for_stopping)
         last_epoch = 0
         validation_loss = 0
         validation_reconstruction_loss = 0
-        fig = plt.figure(figsize=(10, 10))
         start_flag = True
         while self._unlabelled.epochs_completed < self._max_epochs:
             training_loss = self._feature_network.partial_fit(self._unlabelled.next_batch(self._batch_size)[0])
@@ -129,16 +134,10 @@ class SelfTaughtTrainer(object):
                     self._feature_network.loss(self._validation.next_batch(self._validation.num_examples)[0])
                 reconstruction = self._feature_network.reconstruct(self._validation.next_batch(100)[0])
 
-                for i in range(100):
-                    ax = fig.add_subplot(10, 10, i + 1)
-                    ax.imshow(reconstruction[i].reshape(28, 28), cmap=cm.gray)
-
-                fig.savefig('reconstruction.png')
-                #added logging
                 print("{0} Unsupervised Epochs Completed. Training_loss = {3}, Validation loss = {1},"
                       " reconstruction loss = {2}".format(last_epoch, validation_loss, validation_reconstruction_loss, training_loss))
 
-                save_dict[last_epoch%EPOCH_WINDOW_FOR_STOPPING] = (self._save_filename+'_ae_'+str(last_epoch)+'.net', self._feature_network.get_save_state())
+                self.save_dict[last_epoch % self._epoch_window_for_stopping] = (self._save_filename+'_ae_'+str(last_epoch)+'.net', self._feature_network.get_save_state())
                 reconstruction_loss_condition = stop_for_reconstruction_loss(validation_reconstruction_loss)
                 """
                 if self._early_stopping:
@@ -152,12 +151,14 @@ class SelfTaughtTrainer(object):
                     ))
                     break
 
-        for model_number in save_dict:
-            filename = save_dict[model_number][0]
-            save_state = save_dict[model_number][1]
-            self._feature_network.save(filename, save_state)
-
         self._after_unsupervised_training()
+        return validation_reconstruction_loss
+
+    def save_feature_models(self):
+        for model_number in self.save_dict:
+            filename = self.save_dict[model_number][0]
+            save_state = self.save_dict[model_number][1]
+            self._feature_network.save(filename, save_state)
 
     def build_validation_features(self):
         validation_batch_input, validation_batch_labels = self._validation.next_batch(self._validation.num_examples)
@@ -171,9 +172,10 @@ class SelfTaughtTrainer(object):
             for row in self.loss_log:
                 csvwriter.writerow(row)
 
-    def _after_unsupervised_training(self):
+    def after_unsupervised_training(self):
         self.build_validation_features()
         self.log_loss('unsupervised_log.csv')
+        self.save_feature_models()
 
     @staticmethod
     @gen_utils.ready_generator
@@ -190,7 +192,7 @@ class SelfTaughtTrainer(object):
 
     def run_supervised_training(self):
         self.loss_log = [('training_loss', 'validation_loss')]
-        stop_for = SelfTaughtTrainer.loss_stopping_criterion()
+        stop_for = SelfTaughtTrainer.early_stopping_criterion(self._epoch_window_for_stopping)
         last_epoch = 0
         validation_loss = 0
         save_dict = {}
@@ -206,7 +208,9 @@ class SelfTaughtTrainer(object):
                 last_epoch = self._labelled.epochs_completed
                 self._output_network.save(self._save_filename+'_ffd_'+str(last_epoch)+'.net')
 
-                save_dict[last_epoch%100] = (self._save_filename+'_ffd_'+str(last_epoch)+'.net', self._output_network.get_save_state())
+                save_dict[last_epoch%self._epoch_window_for_stopping] = \
+                    (self._save_filename+'_ffd_'+str(last_epoch)+'.net', self._output_network.get_save_state())
+
                 validation_loss = self._output_network.loss_on(self._validation_features, self._validation_labels)
                 print('{0} Supervised Epochs Completed. validation loss ={1}'.format(last_epoch, validation_loss))
 
@@ -222,7 +226,8 @@ class SelfTaughtTrainer(object):
             save_state = save_dict[model_number][1]
             self._feature_network.save(filename, save_state)
 
-        self._after_supervised_training()
+        self.after_supervised_training()
+        return self._test_accuracy
 
     def run_test_data(self):
         test_batch_input, test_batch_labels = self._test.next_batch(self._test.num_examples)
@@ -230,7 +235,7 @@ class SelfTaughtTrainer(object):
         test_output = self._output_network.encoding(self._test_features)
         self._test_accuracy = SelfTaughtTrainer.accuracy(test_output, test_batch_labels)
 
-    def _after_supervised_training(self):
+    def after_supervised_training(self):
         self.run_test_data()
         self.log_loss('supervised_log.csv')
 
@@ -257,14 +262,34 @@ class SelfTaughtTrainer(object):
         return self._output_network.encoding(features)
 
 if __name__ == '__main__':
-    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 196], sparse=True, learning_rate=0.001),
+    timestamp = str(dt.datetime.now())
+    timestamp = timestamp.replace(' ', '_').replace(':', '-').replace('.', '-')
+    run_folder = os.path.join(os.path.pardir, 'results', timestamp)
+    trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 196], beta=0.1, sparse=True, sparsity=0.10,
+                                                                  lambda_=0.03,
+                                                                  learning_rate=0.001, logdir=run_folder),
                                                    ffd.FeedForwardNetwork([196, 10]),
                                                    100,
                                                    read_data_sets('', one_hot=True),
-                                                   save_filename='mnist_self_taught'
+                                                   save_filename='mnist_self_taught',
+                                                   run_folder=run_folder
                                                    )
+    '''
+    root = os.path.join(os.path.pardir, 'results', '2017-09-20_19-22-13-311688')
+    auto_file = os.path.join(root, 'mnist_self_taught_ae_48.net')
+    supe_file = os.path.join(root, 'mnist_self_taught_ffd_261.net')
+    auto = ae.Autoencoder.load_model(auto_file, logdir=run_folder)  # type: ae.Autoencoder
+    """:type : ae.Autoencoder"""
+    supe = ffd.FeedForwardNetwork.load_model(supe_file)
+    data = read_data_sets('', one_hot=True)
+    trainer = SelfTaughtTrainer.from_only_labelled(auto, ffd.FeedForwardNetwork([196,10]),
+                                                   100,
+                                                   data,
+                                                   save_filename='mnist_self_taught',
+                                                   run_folder=run_folder)
+    '''
+    print(trainer.run_test_data())
     trainer.run_unsupervised_training()
     trainer.run_supervised_training()
     print(trainer._test_accuracy)
-
 
