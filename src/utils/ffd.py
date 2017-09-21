@@ -14,7 +14,7 @@ class FeedForwardNetwork(object):
     """
 
     def __init__(self, network_architecture, session=tf.Session(), learning_rate=0.001,
-                 transfer_fct=tf.nn.sigmoid):
+                 dynamic_learning_rate=True, transfer_fct=tf.nn.sigmoid):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
@@ -24,6 +24,7 @@ class FeedForwardNetwork(object):
         self._new = True
         self.weights = None
         self.biases = None
+        self.dynamic_learning_rate = dynamic_learning_rate
 
         # tf Graph input
         self._global_step = tf.Variable(0, trainable=False)
@@ -114,9 +115,12 @@ class FeedForwardNetwork(object):
         self.cost = tf.reduce_mean(loss)   # average over batch
         # Use ADAM optimizer
         # TODO Make learning rate dynamic
-        self._learning_rate = tf.train.exponential_decay(self._starting_learning_rate, self._global_step, 100, 0.96)
+        if self.dynamic_learning_rate:
+            self._learning_rate = tf.train.exponential_decay(self._starting_learning_rate, self._global_step, 100, 0.96)
+        else:
+            self._learning_rate = self._starting_learning_rate
         self.optimizer = \
-            tf.train.GradientDescentOptimizer(learning_rate=self._learning_rate).minimize(self.cost, global_step=self._global_step)
+            tf.train.RMSPropOptimizer(learning_rate=self._learning_rate).minimize(self.cost, global_step=self._global_step)
 
     def setup(self):
         """Setup a pre-created network with loaded weights and biases"""

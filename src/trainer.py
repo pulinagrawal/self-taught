@@ -268,9 +268,8 @@ if __name__ == '__main__':
     timestamp = timestamp.replace(' ', '_').replace(':', '-').replace('.', '-')
     run_folder = os.path.join(os.path.pardir, 'results', timestamp)
     trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 196], beta=0.1, sparse=True, sparsity=0.10,
-                                                                  lambda_=0.03,
-                                                                  learning_rate=0.001, logdir=run_folder),
-                                                   ffd.FeedForwardNetwork([196, 10]),
+                                                                  lambda_=0.03, learning_rate=0.001, logdir=run_folder),
+                                                   ffd.FeedForwardNetwork([196, 10], dynamic_learning_rate=False),
                                                    100,
                                                    read_data_sets('', one_hot=True),
                                                    save_filename='mnist_self_taught',
