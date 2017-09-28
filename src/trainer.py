@@ -44,7 +44,10 @@ class SelfTaughtTrainer(object):
         self._run_folder = run_folder
         if run_folder is None:
             timestamp = str(dt.datetime.now())
-            self._run_folder = timestamp.replace(' ', '_').replace(':', '-').replace('.', '-')
+            timestamp = timestamp.replace(' ', '_').replace(':', '-').replace('.', '-')
+            project_path = os.path.split(os.path.split(os.path.realpath(__file__))[0])[0]
+            self._run_folder = os.path.join(project_path, 'results', timestamp)
+
         if not os.path.exists(self._run_folder):
             os.mkdir(self._run_folder)
         self._save_filename = os.path.join(self._run_folder, save_filename)
@@ -268,7 +271,7 @@ if __name__ == '__main__':
     timestamp = timestamp.replace(' ', '_').replace(':', '-').replace('.', '-')
     run_folder = os.path.join(os.path.pardir, 'results', timestamp)
     trainer = SelfTaughtTrainer.from_only_labelled(ae.Autoencoder([784, 196], beta=0.1, sparse=True, sparsity=0.10,
-                                                                  lambda_=0.03, learning_rate=0.001, logdir=run_folder),
+                                                                  lambda_=0.03, learning_rate=0.01, logdir=run_folder),
                                                    ffd.FeedForwardNetwork([196, 10], dynamic_learning_rate=False),
                                                    100,
                                                    read_data_sets('', one_hot=True),
