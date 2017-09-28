@@ -4,8 +4,8 @@ import pandas
 import numpy as np
 import pickle as pkl
 
-from src.utils import ae
-from src.utils import ffd
+from utils import ae
+from utils import ffd
 from src import utils
 from src import trainer
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
