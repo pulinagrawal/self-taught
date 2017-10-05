@@ -3,9 +3,9 @@ import datetime as dt
 import os
 import csv
 
-from utils import ae
-from utils import ffd
-import utils.generator as gen_utils
+from src.utils import ae
+from src.utils import ffd
+import src.utils.generator as gen_utils
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 from tensorflow.contrib.learn.python.learn.datasets import base

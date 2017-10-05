@@ -4,8 +4,8 @@ import pandas
 import numpy as np
 import pickle as pkl
 
-from utils import ae
-from utils import ffd
+from src.utils import ae
+from src.utils import ffd
 from src import utils
 from src import trainer
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
@@ -55,9 +55,7 @@ def create_datasets(geodb_filepath, from_pickle=True):
     if from_pickle:
         geo_df = pkl.load(open(geodb_filepath, 'rb'))
 
-    geo_df = geo_df.fillna(0)
-    geo_df = geo_df.sub(geo_df.min(), axis=1)
-    geo_df = geo_df.div(geo_df.max(), axis=1)
+    geo_df = geo_df.dropna(axis=0)
     unlabelled, validation = split_dataframes(geo_df)
     labelled = DataSet(np.array([0]), np.array([0]), reshape=False)
     test = DataSet(np.array([0]), np.array([0]), reshape=False)
@@ -76,7 +74,11 @@ if __name__ == '__main__':
     parser.add_argument('--beta', type=float, help='value of beta to control the weight of sparsity constraint in loss')
     args = parser.parse_args()
 
-    unlabelled, labelled, validation, test = create_datasets(os.path.join(os.pardir, 'data', 'tranposed_direct.pkl'))
+    unlabelled, labelled, validation, test = create_datasets(os.path.join(os.pardir, 'data', 'final_transp_directpkl.pkl'))
+    #datasets = create_datasets(os.path.join(os.pardir, 'data', 'tranposed_direct.pkl'))
+    #pkl.dump(datasets, open('..\\data\\datasets_dropped.pkl', 'wb'))
+    # Loading from splits is needed because of different version of pandas on hpc
+    #unlabelled, labelled, validation, test = pkl.load(os.path.join(os.pardir, 'data', 'datasets_dropped.pkl'))
     input_size = unlabelled._images.shape[1]
 
     print(args)

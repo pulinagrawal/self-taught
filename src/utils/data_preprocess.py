@@ -3,6 +3,10 @@ from
 https://github.com/elegant-scipy/notebooks/blob/master/ch2.ipynb
 '''
 import numpy as np
+import pandas as pd
+import os
+import pickle as pkl
+
 from scipy import stats
 
 def quantile_norm(X):
@@ -46,3 +50,27 @@ def quantile_norm_log(X):
     logX = np.log(X + 1)
     logXn = quantile_norm(logX)
     return logXn
+
+
+def preprocess(geodb_frame):
+    ''' sample as rows and features/genes as columns'''
+    geodb_frame = geodb_frame.dropna(axis=0)
+    
+
+if __name__ == '__main__':
+
+    pickled = False
+    if pickled:
+        filename = os.path.join('data', 'final.txt')
+        df = pd.read_csv(filename, sep='\t', index_col=0, chunksize=20000)
+
+    else:
+        filename = os.path.join('data', 'final_transp_directpkl.pkl')
+        df = pkl.load(open(filename, 'rb'))
+        df_mat = df.as_matrix()
+        df_mat.shape()
+        df_mat = quantile_norm(df_mat.transpose())
+        df.values = df_mat
+
+
+
