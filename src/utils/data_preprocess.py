@@ -60,17 +60,20 @@ def preprocess(geodb_frame):
 if __name__ == '__main__':
 
     pickled = False
-    if pickled:
-        filename = os.path.join('data', 'final.txt')
-        df = pd.read_csv(filename, sep='\t', index_col=0, chunksize=20000)
-
-    else:
-        filename = os.path.join('data', 'final_transp_directpkl.pkl')
-        df = pkl.load(open(filename, 'rb'))
+    if not pickled:
+        filename = os.path.join(os.path.pardir, os.path.pardir, 'data', 'final.txt')
+        iter_csv = pd.read_csv(filename, sep='\t', index_col=0, chunksize=20000)
+        print('read')
+        df = pd.concat([chunk for chunk in iter_csv])
+        print('loaded')
         df_mat = df.as_matrix()
         df_mat.shape()
-        df_mat = quantile_norm(df_mat.transpose())
+        df_mat = quantile_norm(df_mat)
+        print('normed')
         df.values = df_mat
-
+        df.transpose()
+        print(df.head())
+        print(df.shape)
+        pkl.dump(df, open('trnspd_q_normd_df.pkl'))
 
 
