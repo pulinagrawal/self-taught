@@ -1,13 +1,12 @@
 import os
 import argparse
-import pandas
 import numpy as np
 import pickle as pkl
 
-from src.utils import ae
-from src.utils import ffd
-from src import utils
-from src import trainer
+from utils import ae
+from utils import ffd
+import utils
+import trainer
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 
 def build_dataset(features, labels):
@@ -68,7 +67,7 @@ def run_trainer():
 if __name__ == '__main__':
 
     split = True
-    normed_split_path = os.path.join(os.pardir, 'data', 'normd_split.pkl')
+    normed_split_path = os.path.join('data', 'normd_split.pkl')
     parser = argparse.ArgumentParser(description='run on hyperparameters')
     parser.add_argument('--nHidden', type=int, help='number of units in hidden layer')
     parser.add_argument('--learning_rate', type=float, help='learning rate for unsupervised step')
@@ -77,7 +76,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     if not split:
-        normed_path = os.path.join(os.path.pardir, 'data', 'transp_normd_1norm.pkl')
+        normed_path = os.path.join('data', 'transp_normd_1norm.pkl')
         split_data = create_datasets(normed_path)
         pkl.dump(split_data, open(normed_split_path, 'wb'))
         exit()
