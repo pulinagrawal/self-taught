@@ -67,18 +67,27 @@ def run_trainer():
 
 if __name__ == '__main__':
 
+    split = True
+    normed_split_path = os.path.join(os.pardir, 'data', 'normd_split.pkl')
     parser = argparse.ArgumentParser(description='run on hyperparameters')
     parser.add_argument('--nHidden', type=int, help='number of units in hidden layer')
     parser.add_argument('--learning_rate', type=float, help='learning rate for unsupervised step')
     parser.add_argument('--sparsity', type=float, help='sparsity of the hidden layer')
     parser.add_argument('--beta', type=float, help='value of beta to control the weight of sparsity constraint in loss')
     args = parser.parse_args()
+    
+    if not split:
+        normed_path = os.path.join(os.path.pardir, 'data', 'transp_normd_1norm.pkl')
+        split_data = create_datasets(normed_path)
+        pkl.dump(split_data, open(normed_split_path, 'wb'))
+        exit()
 
-    unlabelled, labelled, validation, test = create_datasets(os.path.join(os.pardir, 'data', 'final_transp_directpkl.pkl'))
+    #unlabelled, labelled, validation, test = create_datasets(os.path.join(os.pardir, 'data', 'final_transp_directpkl.pkl'))
     #datasets = create_datasets(os.path.join(os.pardir, 'data', 'tranposed_direct.pkl'))
     #pkl.dump(datasets, open('..\\data\\datasets_dropped.pkl', 'wb'))
     # Loading from splits is needed because of different version of pandas on hpc
-    #unlabelled, labelled, validation, test = pkl.load(os.path.join(os.pardir, 'data', 'datasets_dropped.pkl'))
+
+    unlabelled, labelled, validation, test = pkl.load(open(normed_split_path, 'rb'))
     input_size = unlabelled._images.shape[1]
 
     print(args)

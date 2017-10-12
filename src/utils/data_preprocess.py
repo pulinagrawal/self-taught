@@ -7,7 +7,89 @@ import pandas as pd
 import os
 import pickle as pkl
 
-from scipy import stats
+
+def rankdata(a, method='average'):
+    """
+    Assign ranks to data, dealing with ties appropriately.
+    Ranks begin at 1.  The `method` argument controls how ranks are assigned
+    to equal values.  See [1]_ for further discussion of ranking methods.
+    Parameters
+    ----------
+    a : array_like
+        The array of values to be ranked.  The array is first flattened.
+    method : str, optional
+        The method used to assign ranks to tied elements.
+        The options are 'average', 'min', 'max', 'dense' and 'ordinal'.
+        'average':
+            The average of the ranks that would have been assigned to
+            all the tied values is assigned to each value.
+        'min':
+            The minimum of the ranks that would have been assigned to all
+            the tied values is assigned to each value.  (This is also
+            referred to as "competition" ranking.)
+        'max':
+            The maximum of the ranks that would have been assigned to all
+            the tied values is assigned to each value.
+        'dense':
+            Like 'min', but the rank of the next highest element is assigned
+            the rank immediately after those assigned to the tied elements.
+        'ordinal':
+            All values are given a distinct rank, corresponding to the order
+            that the values occur in `a`.
+        The default is 'average'.
+    Returns
+    -------
+    ranks : ndarray
+         An array of length equal to the size of `a`, containing rank
+         scores.
+    References
+    ----------
+    .. [1] "Ranking", http://en.wikipedia.org/wiki/Ranking
+    Examples
+    --------
+    >>> from scipy.stats import rankdata
+    >>> rankdata([0, 2, 3, 2])
+    array([ 1. ,  2.5,  4. ,  2.5])
+    >>> rankdata([0, 2, 3, 2], method='min')
+    array([ 1,  2,  4,  2])
+    >>> rankdata([0, 2, 3, 2], method='max')
+    array([ 1,  3,  4,  3])
+    >>> rankdata([0, 2, 3, 2], method='dense')
+    array([ 1,  2,  3,  2])
+    >>> rankdata([0, 2, 3, 2], method='ordinal')
+    array([ 1,  2,  4,  3])
+    """
+    if method not in ('average', 'min', 'max', 'dense', 'ordinal'):
+        raise ValueError('unknown method "{0}"'.format(method))
+
+    arr = np.ravel(np.asarray(a))
+    algo = 'mergesort' if method == 'ordinal' else 'quicksort'
+    sorter = np.argsort(arr, kind=algo)
+
+    inv = np.empty(sorter.size, dtype=np.intp)
+    inv[sorter] = np.arange(sorter.size, dtype=np.intp)
+
+    if method == 'ordinal':
+        return inv + 1
+
+    arr = arr[sorter]
+    obs = np.r_[True, arr[1:] != arr[:-1]]
+    dense = obs.cumsum()[inv]
+
+    if method == 'dense':
+        return dense
+
+    # cumulative counts of each unique value
+    count = np.r_[np.nonzero(obs)[0], len(obs)]
+
+    if method == 'max':
+        return count[dense]
+
+    if method == 'min':
+        return count[dense - 1] + 1
+
+    # average method
+    return .5 * (count[dense] + count[dense - 1] + 1)
 
 def quantile_norm(X):
     """Normalize the columns of X to each have the same distribution.
@@ -36,7 +118,7 @@ def quantile_norm(X):
     # compute the column-wise ranks. Each observation is replaced with its
     # rank in that column: the smallest observation is replaced by 1, the
     # second-smallest by 2, ..., and the largest by M, the number of rows.
-    ranks = np.apply_along_axis(stats.rankdata, 0, X)
+    ranks = np.apply_along_axis(rankdata, 0, X)
 
     # convert ranks to integer indices from 0 to M-1
     rank_indices = ranks.astype(int) - 1
@@ -59,21 +141,30 @@ def preprocess(geodb_frame):
 
 if __name__ == '__main__':
 
-    pickled = False
-    if not pickled:
-        filename = os.path.join(os.path.pardir, os.path.pardir, 'data', 'final.txt')
-        iter_csv = pd.read_csv(filename, sep='\t', index_col=0, chunksize=20000)
-        print('read')
-        df = pd.concat([chunk for chunk in iter_csv])
-        print('loaded')
+    pickled = True
+    create_sets = True
+    normed = False
+    normed_path = os.path.join(os.path.pardir, os.path.pardir, 'data', 'transp_normd_1norm.pkl')
+    print(os.path.realpath(normed_path))
+    if not normed:
+        if not pickled:
+            filename = os.path.join('data', 'final.txt')
+            iter_csv = pd.read_csv(filename, sep='\t', index_col=0, chunksize=20000)
+            df = pd.concat([chunk for chunk in iter_csv])
+        else:
+            filename = os.path.join(os.path.pardir, os.path.pardir, 'data', 'final_transp_directpkl.pkl')
+            df = pkl.load(open(filename, 'rb'))
+
+        df = df.dropna(axis=0)
         df_mat = df.as_matrix()
-        df_mat.shape()
-        df_mat = quantile_norm(df_mat)
-        print('normed')
-        df.values = df_mat
-        df.transpose()
-        print(df.head())
-        print(df.shape)
-        pkl.dump(df, open('trnspd_q_normd_df.pkl'))
+        print(df_mat.shape)
+        df_mat = quantile_norm(df_mat.transpose())
+        df_max = np.max(df_mat)
+        df_mat = df_mat/df_max
+        dfn = pd.DataFrame(df_mat.transpose(), index=df.index, columns=df.columns)
+        dfn = dfn.dropna(axis=0)
+        print(dfn.head())
+        print(dfn.shape)
+        pkl.dump(dfn, open(normed_path, 'wb'))
 
 
