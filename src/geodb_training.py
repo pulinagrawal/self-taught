@@ -67,12 +67,13 @@ def run_trainer():
 if __name__ == '__main__':
 
     split = True
-    normed_split_path = os.path.join('data', 'normd_split.pkl')
+    normed_split_path = os.path.join('data', 'normd_split_')
     parser = argparse.ArgumentParser(description='run on hyperparameters')
     parser.add_argument('--nHidden', type=int, help='number of units in hidden layer')
     parser.add_argument('--learning_rate', type=float, help='learning rate for unsupervised step')
     parser.add_argument('--sparsity', type=float, help='sparsity of the hidden layer')
     parser.add_argument('--beta', type=float, help='value of beta to control the weight of sparsity constraint in loss')
+    parser.add_argument('--split', type=int, help='the data split index to use')
     args = parser.parse_args()
     
     if not split:
@@ -86,7 +87,7 @@ if __name__ == '__main__':
     #pkl.dump(datasets, open('..\\data\\datasets_dropped.pkl', 'wb'))
     # Loading from splits is needed because of different version of pandas on hpc
 
-    unlabelled, labelled, validation, test = pkl.load(open(normed_split_path, 'rb'))
+    unlabelled, labelled, validation, test = pkl.load(open(normed_split_path+str(args.split)+'.pkl', 'rb'))
     input_size = unlabelled._images.shape[1]
 
     print(args)
@@ -109,3 +110,4 @@ if __name__ == '__main__':
                                             )
 
     geo_trainer.run_unsupervised_training()
+    print(logdir)
