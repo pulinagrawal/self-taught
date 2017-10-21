@@ -8,6 +8,7 @@ from utils import ffd
 import utils
 import trainer
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
+from src.utils import image as im
 
 def build_dataset(features, labels):
     dataset = DataSet(features, labels, reshape=False)
@@ -39,6 +40,8 @@ def split_dataframes(geodb_dataframe, validation_pct=.05, test_gsm_list_or_pct=N
         test = build_dataset(*pull_from_subframe(geodb_dataframe, test_frame))
 
     validation_frame = geodb_dataframe.sample(n_validation_samples)
+    print(validation_frame.head(100))
+    im.plot_genes(validation_frame.head(100).as_matrix())
     validation = build_dataset(*pull_from_subframe(geodb_dataframe, validation_frame))
 
     training = build_dataset(*pull_from_subframe(geodb_dataframe, geodb_dataframe))
