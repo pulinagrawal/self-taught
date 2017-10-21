@@ -100,7 +100,8 @@ if __name__ == '__main__':
                                                            learning_rate=args.learning_rate,
                                                            sparsity=args.sparsity,
                                                            beta=args.beta,
-                                                           logdir=logdir
+                                                           logdir=logdir,
+                                                           keep_prob=.20
                                                            ),
                                             ffd.FeedForwardNetwork([args.nHidden, 10],),
                                             batch_size=128,
