@@ -8,7 +8,7 @@ from utils import ffd
 import utils
 import trainer
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
-from src.utils import image as im
+#from src.utils import image as im
 
 def build_dataset(features, labels):
     dataset = DataSet(features, labels, reshape=False)
@@ -41,7 +41,7 @@ def split_dataframes(geodb_dataframe, validation_pct=.05, test_gsm_list_or_pct=N
 
     validation_frame = geodb_dataframe.sample(n_validation_samples)
     print(validation_frame.head(100))
-    im.plot_genes(validation_frame.head(100).as_matrix())
+    #im.plot_genes(validation_frame.head(100).as_matrix())
     validation = build_dataset(*pull_from_subframe(geodb_dataframe, validation_frame))
 
     training = build_dataset(*pull_from_subframe(geodb_dataframe, geodb_dataframe))
@@ -101,7 +101,8 @@ if __name__ == '__main__':
                                                            sparsity=args.sparsity,
                                                            beta=args.beta,
                                                            logdir=logdir,
-                                                           keep_prob=.20
+                                                           keep_prob=1
+
                                                            ),
                                             ffd.FeedForwardNetwork([args.nHidden, 10],),
                                             batch_size=128,
