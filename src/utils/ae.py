@@ -13,11 +13,12 @@ class Autoencoder(object):
     def __init__(self, network_architecture, name='ae', learning_rate=0.001,
                  sparse=True, sparsity=0.1, transfer_fct=tf.nn.sigmoid, beta=3, step=0,
                  reconstruction_batch_size=100, lambda_=0.003, tied_weights=True,
-                 keep_prob=0.5, denoise_keep_prob=0.9, logdir='summary'):
+                 keep_prob=0.5, denoise_keep_prob=0.9, dynamic_learning_rate=True, logdir='summary'):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
-        self.learning_rate = learning_rate
+        self._starting_learning_rate = learning_rate
+        self.dynamic_learning_rate = dynamic_learning_rate
         self.sparse = sparse
         self.rho = sparsity
         self._transfer_fct = transfer_fct
@@ -37,9 +38,9 @@ class Autoencoder(object):
         self.graph = tf.Graph()
         self.summaries = {}
         with self.graph.as_default():
-            self.global_step = tf.Variable(0, trainable=False)
             #TODO: Serialization maybe possible if the session object is instantiated later.
             # tf Graph input
+            self._global_step = tf.Variable(0, trainable=False)
             with tf.name_scope(self._name+'/input'):
                 self._x = tf.placeholder(tf.float32, [None, network_architecture[0]], name='input')
             print('batch size', 'x',  network_architecture[0])
@@ -174,7 +175,8 @@ class Autoencoder(object):
         print("Network")
         prev_layer_output = self._x
         #TODO May implement denoising
-        prev_layer_output = tf.nn.dropout(prev_layer_output, self._denoise_keep_prob)
+        #prev_layer_output = tf.nn.dropout(prev_layer_output, self._denoise_keep_prob)
+        prev_layer_output = prev_layer_output + tf.random_normal(shape=tf.shape(self._x), mean=0.0, stddev=1-self._denoise_keep_prob)
         #prev_layer_output = tf.Print(prev_layer_output, [prev_layer_output, tf.shape(prev_layer_output), 'input'])
         layers = [dict(zip(['weights', 'biases'], _layer))
                   for _layer in zip(self._network_weights, self._network_biases)]
@@ -251,11 +253,16 @@ class Autoencoder(object):
             self.summaries['latent_loss'] = tf.summary.scalar('latent_loss', self.latent_loss)
             # Use ADAM optimizer
             # TODO Make learning rate dynamic
-            self._learning_rate = self.learning_rate
             self.summaries['beta'] = tf.summary.scalar('beta', self.beta)
+            if self.dynamic_learning_rate:
+                self._learning_rate = tf.train.exponential_decay(self._starting_learning_rate, self._global_step, 500, 0.96)
+            else:
+                self._learning_rate = self._starting_learning_rate
             self.summaries['learning_rate'] = tf.summary.scalar('learning_rate', self._learning_rate)
             self.optimizer = \
-                tf.train.RMSPropOptimizer(learning_rate=self._learning_rate).minimize(self.cost, name='optimizer')
+                tf.train.RMSPropOptimizer(learning_rate=self._learning_rate).minimize(self.cost,
+                                                                                      global_step=self._global_step,
+                                                                                      name='optimizer')
 
     def setup(self):
         """Setup a pre-created network with loaded weights and biases"""
@@ -317,7 +324,7 @@ class Autoencoder(object):
 
     def get_save_state(self):
         save_list = [{'network_architecture': self._network_architecture,
-                      'learning_rate': self.learning_rate,
+                      'learning_rate': self._starting_learning_rate,
                       'sparse': self.sparse,
                       'sparsity': self.rho,
                       'transfer_fct': self._transfer_fct,
