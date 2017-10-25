@@ -13,7 +13,8 @@ class Autoencoder(object):
     def __init__(self, network_architecture, name='ae', learning_rate=0.001,
                  sparse=True, sparsity=0.1, transfer_fct=tf.nn.sigmoid, beta=3, step=0,
                  reconstruction_batch_size=100, lambda_=0.003, tied_weights=True,
-                 keep_prob=0.5, denoise_keep_prob=0.9, dynamic_learning_rate=True, logdir='summary'):
+                 keep_prob=0.5, denoise_keep_prob=0.9, dynamic_learning_rate=True,
+                 momentum=0.8, tf_multiplier=10, logdir='summary'):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
@@ -31,6 +32,8 @@ class Autoencoder(object):
         self.lambda_ = lambda_
         self.beta = beta
         self.logdir = logdir
+        self.momentum = momentum
+        self.multiplier = tf_multiplier
         self.keep_prob = keep_prob
         self.denoise_keep_prob = denoise_keep_prob
         self._reconstruction_batch_size = reconstruction_batch_size
@@ -182,7 +185,7 @@ class Autoencoder(object):
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
             with tf.name_scope(self._name+'/hidden{0}/'.format(i)):
-                current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])*10, name='units')
+                current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])*self.multiplier, name='units')
                 #current_layer = tf.Print(current_layer, [current_layer, tf.shape(current_layer), 'current_layer'])
             self._layers.append(current_layer)
             if i == len(self._network_architecture)-2:
@@ -260,9 +263,10 @@ class Autoencoder(object):
                 self._learning_rate = self._starting_learning_rate
             self.summaries['learning_rate'] = tf.summary.scalar('learning_rate', self._learning_rate)
             self.optimizer = \
-                tf.train.RMSPropOptimizer(learning_rate=self._learning_rate).minimize(self.cost,
-                                                                                      global_step=self._global_step,
-                                                                                      name='optimizer')
+                tf.train.RMSPropOptimizer(learning_rate=self._learning_rate,
+                                          momentum=self.momentum).minimize(self.cost,
+                                                                           global_step=self._global_step,
+                                                                           name='optimizer')
 
     def setup(self):
         """Setup a pre-created network with loaded weights and biases"""
