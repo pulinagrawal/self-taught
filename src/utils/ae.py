@@ -12,7 +12,7 @@ class Autoencoder(object):
     """
     def __init__(self, network_architecture, name='ae', learning_rate=0.001,
                  sparse=True, sparsity=0.1, transfer_fct=tf.nn.sigmoid, beta=3, step=0,
-                 reconstruction_batch_size=100, lambda_=0.003, tied_weights=True,
+                 reconstruction_batch_size=100, lambda_=0, tied_weights=True,
                  keep_prob=0.5, denoise_keep_prob=0.9, dynamic_learning_rate=True,
                  momentum=0.8, tf_multiplier=10, logdir='summary'):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
@@ -185,7 +185,11 @@ class Autoencoder(object):
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
             with tf.name_scope(self._name+'/hidden{0}/'.format(i)):
-                current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])*self.multiplier, name='units')
+                if i == len(layers)-1:
+                    current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases']), name='units')
+                else:
+                    current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])*self.multiplier, name='units')
+
                 #current_layer = tf.Print(current_layer, [current_layer, tf.shape(current_layer), 'current_layer'])
             self._layers.append(current_layer)
             if i == len(self._network_architecture)-2:

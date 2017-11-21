@@ -30,23 +30,15 @@ def plot_genes(input_genes1, input_genes2=None, title=''):
 
 if __name__ == '__main__':
 
-    log_data = pkl.load(open(os.path.join('data', 'final_transp_directpkl.pkl'), 'rb'))
-    qnorm_data = pkl.load(open(os.path.join('data', 'transp_normd.pkl'), 'rb'))
     data = pkl.load(open(os.path.join('data', 'normd_split_1.pkl'), 'rb'))
-    data1 = pkl.load(open(os.path.join('data', 'normd_split_2.pkl'), 'rb'))
-    sae = ae.Autoencoder.load_model(os.path.join('results', 'geodb_ae_215.net'))
-    plot_genes(log_data.head(1000).as_matrix(), title='Log Tranformed')
-    plot_genes(qnorm_data.head(1000).as_matrix(), title='Quantile Normalized')
+    sae = ae.Autoencoder.load_model(os.path.join('results', 'best_attmpt_2', 'geodb_ae_89.net'))
     input_image = data[2].next_batch(100)
-    input_image1 = data1[2].next_batch(1000)
     print(input_image[1])
-    print(input_image1[1])
     print(sae.rho)
     print(sae.beta)
     print(np.shape(input_image[0]))
     output_image = sae.reconstruct(input_image[0])
     print(np.shape(output_image))
-    plot_genes(input_image1[0], title='Normalized to 1')
     plot_genes(input_image[0], output_image)
     #img = plt.imshow(output_image)
 
