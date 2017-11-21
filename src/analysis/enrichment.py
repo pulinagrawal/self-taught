@@ -32,7 +32,7 @@ def get_print_unit_biology(unit_num, biology_result_file):
                break
     return biology
 
-def get_gsm_biology(gsm, biology_result_file, model, datasets, for_top_x_pct_units=0.02):
+def get_gsm_biology(gsm, biology_result_file, model, datasets, for_top_x_pct_units=0.5, random=False):
 
    input_genes = get_input(gsm, datasets)
    if input_genes is not None:
@@ -40,8 +40,14 @@ def get_gsm_biology(gsm, biology_result_file, model, datasets, for_top_x_pct_uni
        encoding = model.encoding(model_input)
 
    sorted_units = sorted(enumerate(encoding[0]), key=lambda unit: unit[1])
-   top_units = [unit+1 for unit, _ in sorted_units[-int(len(sorted_units) * for_top_x_pct_units):]]
+   n_units_selected = int(len(sorted_units) * for_top_x_pct_units)
+   top_units = [unit+1 for unit, _ in sorted_units[-n_units_selected:]]
    #added one to unit number because biology_results file assume units start with 1
+
+   if random:
+       top_units = np.random.randint(0, len(sorted_units), size=n_units_selected)
+       top_units = [unit+1 for unit in top_units]
+       #added one to unit number because biology_results file assume units start with 1
 
    biology = []
    for unit in top_units:
@@ -64,8 +70,14 @@ if __name__ == '__main__':
    unlabelled, labelled, validation, test = pkl.load(open(normed_split_path+str(split)+'.pkl', 'rb'))
 
    gsm_list_biology = []
+   random_biology = []
    for gsm in gsm_list:
        gsm_list_biology.extend(get_gsm_biology(gsm, bio_result_file, model, [unlabelled, validation]))
+       random_biology.extend(get_gsm_biology(gsm, bio_result_file, model, [unlabelled, validation], random=True))
 
    for geneset, freq in sorted(Counter(gsm_list_biology).items(), key=lambda x: x[1], reverse=True):
+       print(geneset,': ',freq)
+
+   print("Random Biology")
+   for geneset, freq in sorted(Counter(random_biology).items(), key=lambda x: x[1], reverse=True):
        print(geneset,': ',freq)

@@ -24,8 +24,8 @@ def get_gene_list():
 
 if __name__ == '__main__':
 
-   model_name = 'geodb_ae_89.net'
-   model_file = os.path.join('results', 'best_attmpt_2', model_name)
+   model_name = 'geodb_ae_91.net'
+   model_file = os.path.join('results', 'best_dense_attmpt_1', model_name)
    model = ae.Autoencoder.load_model(model_file, logdir=os.path.join('results', 'features_'+model_name))
    normed_split_path = os.path.join('data', 'normd_split_')
    split = 1
@@ -43,10 +43,10 @@ if __name__ == '__main__':
    most_active = [i+1 for i, freq in enumerate(activity_frequency) if freq>1000]
    print(len(most_active))
 
-   for unit in most_active:
-       enr.get_print_unit_biology(unit, os.path.join('results', 'biology_result.txt'))
 
    fig = plt.figure(1)
    plt.hist(activity_frequency, log=True)
    plt.show()
 
+   for unit in most_active:
+       enr.get_print_unit_biology(unit, os.path.join('results', 'biology_result.txt'))
