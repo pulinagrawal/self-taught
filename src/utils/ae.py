@@ -2,7 +2,6 @@ import pickle
 import numpy as np
 import tensorflow as tf
 
-
 class Autoencoder(object):
     """ Autoencoder (AE) implemented using TensorFlow.
     
@@ -12,9 +11,9 @@ class Autoencoder(object):
     """
 
     def __init__(self, network_architecture, name='ae', learning_rate=0.001,
-                 sparse=True, sparsity=0.1, transfer_fct=tf.nn.sigmoid, beta=3, step=0,
+                 sparse=True, sparsity=0.1, transfer_fct=lambda x: tf.nn.relu6(x*6)/6, beta=3, step=0,
                  reconstruction_batch_size=100, lambda_=0, tied_weights=True,
-                 keep_prob=0.5, denoise_keep_prob=0.9, dynamic_learning_rate=True,
+                 keep_prob=0.5, denoise_keep_prob=0.9, dynamic_learning_rate=False,
                  momentum=0.8, tf_multiplier=10, zero_noise=True, logdir='summary'):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
@@ -188,7 +187,7 @@ class Autoencoder(object):
 
         if not self.zero_noise:
             prev_layer_output = prev_layer_output + tf.random_normal(shape=tf.shape(self._x), mean=0.0,
-                                                                 stddev=1 - self._denoise_keep_prob)
+                                                                 stddev=1-self._denoise_keep_prob)
         else:
             noise = tf.random_uniform(tf.shape(prev_layer_output), maxval=1)
             prev_layer_output = tf.where(noise < self._denoise_keep_prob, prev_layer_output, tf.zeros(tf.shape(prev_layer_output), dtype=tf.float32))
