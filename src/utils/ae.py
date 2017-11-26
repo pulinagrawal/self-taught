@@ -2,6 +2,7 @@ import pickle
 import numpy as np
 import tensorflow as tf
 
+
 class Autoencoder(object):
     """ Autoencoder (AE) implemented using TensorFlow.
     
@@ -11,7 +12,7 @@ class Autoencoder(object):
     """
 
     def __init__(self, network_architecture, name='ae', learning_rate=0.001,
-                 sparse=True, sparsity=0.1, transfer_fct=lambda x: tf.nn.relu6(x*6)/6, beta=3, step=0,
+                 sparse=True, sparsity=0.1, transfer_fct=tf.nn.sigmoid, beta=3, step=0,
                  reconstruction_batch_size=100, lambda_=0, tied_weights=True,
                  keep_prob=0.5, denoise_keep_prob=0.9, dynamic_learning_rate=False,
                  momentum=0.8, tf_multiplier=10, zero_noise=True, logdir='summary'):
@@ -196,10 +197,6 @@ class Autoencoder(object):
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
             with tf.name_scope(self._name + '/hidden{0}/'.format(i)):
-                if i == len(layers) - 1:
-                    current_layer = self._transfer_fct(
-                        (tf.matmul(prev_layer_output, layer['weights']) + layer['biases']), name='units')
-                else:
                     current_layer = self._transfer_fct(
                         (tf.matmul(prev_layer_output, layer['weights']) + layer['biases']) * self.multiplier,
                         name='units')
