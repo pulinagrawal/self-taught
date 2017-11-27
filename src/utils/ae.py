@@ -197,9 +197,14 @@ class Autoencoder(object):
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
             with tf.name_scope(self._name + '/hidden{0}/'.format(i)):
+                if i == len(self._network_architecture) - 2:
                     current_layer = self._transfer_fct(
                         (tf.matmul(prev_layer_output, layer['weights']) + layer['biases']) * self.multiplier,
                         name='units')
+                else:
+                    current_layer = tf.nn.relu6(
+                        (tf.matmul(prev_layer_output, layer['weights']) + layer['biases']) * 6,
+                        name='units')/6
 
                     # current_layer = tf.Print(current_layer, [current_layer, tf.shape(current_layer), 'current_layer'])
             self._layers.append(current_layer)
