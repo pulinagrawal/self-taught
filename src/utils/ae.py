@@ -148,7 +148,7 @@ class Autoencoder(object):
         print(list(reversed(args[:-1])))
         for layer_num, units in enumerate(list(args[1:]) + list(reversed(args[:-1]))):
             with tf.name_scope(self._name + '/hidden{0}/'.format(layer_num)):
-                weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01), name='weights')
+                weights = tf.Variable(tf.truncated_normal([prev_units, units], stddev=0.01)/tf.sqrt(prev_units), name='weights')
             all_weights.append(weights)
             print(weights.get_shape())
             prev_units = units
