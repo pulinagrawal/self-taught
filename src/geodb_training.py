@@ -7,6 +7,7 @@ from utils import ae
 from utils import ffd
 import utils
 import trainer
+from utils import image as im
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 #from src.utils import image as im
 
@@ -58,20 +59,20 @@ def create_datasets(geodb_filepath, from_pickle=True):
         geo_df = pkl.load(open(geodb_filepath, 'rb'))
 
     geo_df = geo_df.dropna(axis=0)
+    print(geo_df.var(axis=0))
+    im.plot_genes(geo_df.sample(1000))
     unlabelled, validation = split_dataframes(geo_df)
     labelled = DataSet(np.array([0]), np.array([0]), reshape=False)
     test = DataSet(np.array([0]), np.array([0]), reshape=False)
 
     return unlabelled, labelled, validation, test
 
-def run_trainer():
-    geodb_trainer = trainer.SelfTaughtTrainer()
 
 if __name__ == '__main__':
 
     split = True
     stacked = False
-    normed_split_path = os.path.join('data', 'normd_split_')
+    normed_split_path = os.path.join('data', 'scaled_shftd_split_')
     parser = argparse.ArgumentParser(description='run on hyperparameters')
     parser.add_argument('--nHidden', type=int, help='number of units in hidden layer')
     parser.add_argument('--learning_rate', type=float, help='learning rate for unsupervised step')
@@ -80,8 +81,8 @@ if __name__ == '__main__':
     parser.add_argument('--keep_prob', type=float, default=1, help='probability to keep a hidden unit during training (implements dropout)')
     parser.add_argument('--denoise_keep_prob', type=float, default=1, help='probability to keep a input during training (possibly implements denoising)')
     parser.add_argument('--lambda_', type=float, default=0, help='multiplier for weight decay parameter')
-    parser.add_argument('--momentum', type=float, default=0.99, help='gradient descent momentum')
-    parser.add_argument('--multiplier', type=float, default=1, help='gradient descent momentum')
+    parser.add_argument('--momentum', type=float, default=0.9, help='gradient descent momentum')
+    parser.add_argument('--multiplier', type=float, default=10, help='gradient descent momentum')
     parser.add_argument('--split', type=int, help='the data split index to use')
     args = parser.parse_args()
     

@@ -13,12 +13,14 @@ class FeedForwardNetwork(object):
 
     """
 
-    def __init__(self, network_architecture, session=tf.Session(), learning_rate=0.001,
+    def __init__(self, network_architecture, session=tf.Session(), learning_rate=0.001, momentum=0.9,
                  dynamic_learning_rate=True, transfer_fct=tf.nn.sigmoid):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
         self._starting_learning_rate = learning_rate
+        self._learning_rate = learning_rate
+        self.momentum = momentum
         self._sess = session
         self._transfer_fct = transfer_fct
         self._new = True
@@ -93,10 +95,7 @@ class FeedForwardNetwork(object):
         layers = [dict(zip(['weights', 'biases'], _layer))
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
-            if i == len(self._network_architecture)-2:
-                current_layer = tf.matmul(prev_layer_output, layer['weights'])+layer['biases']
-            else:
-                current_layer = self._transfer_fct(tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])
+            current_layer = self._transfer_fct(tf.matmul(prev_layer_output, (layer['weights'])+layer['biases'])*10)
             self._layers.append(current_layer)
             if i == len(self._network_architecture)-2:
                 self._encoding_layer = current_layer
@@ -116,11 +115,18 @@ class FeedForwardNetwork(object):
         # Use ADAM optimizer
         # TODO Make learning rate dynamic
         if self.dynamic_learning_rate:
-            self._learning_rate = tf.train.exponential_decay(self._starting_learning_rate, self._global_step, 100, 0.96)
+            decay_rate = 0.96
         else:
-            self._learning_rate = self._starting_learning_rate
+            decay_rate = 1.0
+
+        self._learning_rate = tf.train.exponential_decay(self._starting_learning_rate, self._global_step, 500,
+                                                         decay_rate)
         self.optimizer = \
-            tf.train.RMSPropOptimizer(learning_rate=self._learning_rate).minimize(self.cost, global_step=self._global_step)
+                tf.train.RMSPropOptimizer(learning_rate=self._learning_rate
+                                          ).minimize(self.cost,
+                                                                           global_step=self._global_step,
+                                                                           name='optimizer')
+
 
     def setup(self):
         """Setup a pre-created network with loaded weights and biases"""

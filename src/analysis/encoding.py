@@ -24,16 +24,12 @@ def get_gene_list():
 
 if __name__ == '__main__':
 
-   model_name = 'geodb_ae_91.net'
-   model_folder = os.path.join('results', 'best_dense_attmpt_1')
+   model_name = 'geodb_ae_5.net'
+   model_folder = os.path.join('results', 'best_denoise_corr')
    model_file = os.path.join(model_folder, model_name)
 
    model = ae.Autoencoder.load_model(model_file, logdir=os.path.join('results', 'features_'+model_name))
    features = pd.DataFrame.from_records(model.weights[0])
-   fig = plt.figure(1)
-   plt.hist(features[0])
-   print(np.std(features[0]))
-   plt.show()
    output_file = os.path.join(model_folder, 'features_'+model_name.split('.')[0]+'.csv')
 
    genelist = get_gene_list()

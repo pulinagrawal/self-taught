@@ -12,11 +12,12 @@ def get_gene_list(filename):
                 genes.append(line.split('\t')[0])
     return tuple(genes)
 
-data_files = ['GSE8052_asthma_0.txt', 'GSE8052_asthma_1.txt']
+#data_files = ['GSE8052_asthma_0.txt', 'GSE8052_asthma_1.txt']
+data_files = ['GSE15061_aml.txt', 'GSE15061_mds.txt']
 data_folder = os.path.join('data')
 
 split = 1
-normed_split_path = os.path.join('data', 'scaled_split_')
+normed_split_path = os.path.join('data', 'normd_split_')
 unlabelled, labelled, validation, test = pkl.load(open(normed_split_path + str(split) + '.pkl', 'rb'))
 
 gsm_labels = utils.get_gsm_labels(data_files, data_folder)

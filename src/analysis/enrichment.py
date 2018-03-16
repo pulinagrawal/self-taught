@@ -1,27 +1,32 @@
-from src.utils import ae, stats, reverse_list_dict, get_gsm_labels
-from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
+from src.utils import ae, stats, reverse_dict_of_lists, get_gsm_labels
 from collections import defaultdict
 from collections import Counter
+from functools import partial
 import numpy as np
 import os
 import tqdm
 import re
-import pandas as pd
-import csv
-import matplotlib.pyplot as plt
 import pickle as pkl
+from functools import lru_cache
+
+
+@lru_cache(maxsize=10)
+def get_indexed_label_hashmap(dataset):
+    return dict(zip(dataset.labels.tolist(), range(len(dataset.labels))))
 
 
 def get_input(gsm, datasets):
     for dataset in datasets:
-        for i, label in enumerate(dataset.labels):
-            if label == gsm:
-                break
-        return dataset.images[i]
+        labels_map = get_indexed_label_hashmap(dataset)
+        try:
+            data = dataset.images[labels_map[gsm]]
+            return data
+        except KeyError:
+            print('GSM not found in any datasets')
     return None
 
 
-def get_result_file_hash(biology_result_file):
+def get_result_file_dict(biology_result_file):
     biology = defaultdict(list)
     with open(biology_result_file) as f:
         for line in f:
@@ -37,8 +42,9 @@ def get_result_file_hash(biology_result_file):
                             break
     return biology
 
+
 def print_unit_biology(unit_num, biology_result_file):
-    with open(bio_result_file) as f:
+    with open(biology_result_file) as f:
         for line in f:
             if 'unit' + str(unit_num) + '_gsa' in line:
                 print('unit ' + str(unit_num))
@@ -50,35 +56,141 @@ def print_unit_biology(unit_num, biology_result_file):
                 break
 
 
-def get_gsm_biology(gsm, biology_hash, model, datasets, for_top_x_pct_units=0.1, random=False, disp=False, bio_result_file=''):
+def get_genesets(gsm, geneset_unit_map, model, datasets, for_top_x_pct_units=0.1, random=False, disp=False,
+                 bio_result_file=''):
+    """Returns a list of genesets with their respective counts of the times
+        they showed up in the model with the given biology_hash (a dictionary of units with
+        their corresponding enriched genesets) for thetop x% units.
+    :param gsm:  a gsm in datasets
+    :param geneset_unit_map:
+    :param model:
+    :param datasets:
+    :param for_top_x_pct_units:
+    :param random:
+    :param disp:
+    :param bio_result_file:
+    :return:
+    """
     n_units_selected = int(model.encoding_size * for_top_x_pct_units)
     if not random:
         input_genes = get_input(gsm, datasets)
         if input_genes is not None:
             model_input = np.expand_dims(input_genes, axis=0)
-            encoding = model.encoding(model_input)
+            activations = model.encoding(model_input)[0]
 
-        sorted_units = sorted(enumerate(encoding[0]), key=lambda unit: unit[1])
-        top_units = [unit+1 for unit, _ in sorted_units[-n_units_selected:]]
+        sorted_units = sorted(enumerate(activations), key=lambda unit: unit[1], reverse=True)
+        top_units = [unit + 1 for unit, _ in sorted_units[:n_units_selected]]
         # added one to unit number because biology_results file assume units start with 1
     else:
         top_units = np.random.randint(0, model.encoding_size, size=n_units_selected)
-        top_units = [unit+1 for unit in top_units]
+        top_units = [unit + 1 for unit in top_units]
         # added one to unit number because biology_results file assume units start with 1
 
-    biology = []
+    geneset_list = []
     for unit in top_units:
+        geneset_list.extend(geneset_unit_map[unit])
         if disp and bio_result_file != '':
             print_unit_biology(unit, bio_result_file)
-        biology.extend(biology_hash[unit])
 
-    return biology
+    return geneset_list
+
+
+def enrichment(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datasets, display_units_for_gsms=False,
+               bio_result_file=''):
+
+    # from the map of genesets relevant to a unit get K for each geneset's hypergeometric distribution
+    unit_geneset_map = reverse_dict_of_lists(geneset_unit_map)
+    hypgeoK_geneset_map = {geneset: len(unit_geneset_map[geneset]) for geneset in unit_geneset_map}
+
+    # Run Monte Carlo Simulations
+    random_tests_count = 30
+    empty_list = partial(list, [0] * random_tests_count)
+    random_test_dict = defaultdict(empty_list)
+    print('Running Monte Carlo Simulation')
+    # 1 - shuffle gsm list
+    _ = datasets[0].next_batch(datasets[0].num_examples)
+
+    # 2 - run 'random_tests_count' number of random tests
+    for i in tqdm.tqdm(range(random_tests_count)):
+        test_biology = Counter()
+        # 2a - pick pre-determined number of random gsms
+        _, random_gsm_list = datasets[0].next_batch(len(gsm_list))
+        for gsm in random_gsm_list:
+            test_biology += Counter(get_genesets(gsm, geneset_unit_map, model,
+                                                 datasets,
+                                                 for_top_x_pct_units=for_top_x_pct_units)
+                                    )
+        for geneset in test_biology:
+            random_test_dict[geneset][i] = [test_biology[geneset]]
+
+    max_tests = max([len(random_test_dict[geneset]) for geneset in random_test_dict])
+    print('Running Enrichment with {0} Monte Carlo Simulations'.format(max_tests))
+
+    # we have a set of GSMs
+    gsm_list_biology = []
+    for gsm in gsm_list:
+        # collect all the genesets enriched in a GSM for all GSMs
+        gsm_list_biology.extend(get_genesets(gsm, geneset_unit_map, model, datasets,
+                                             for_top_x_pct_units=for_top_x_pct_units,
+                                             disp=display_units_for_gsms,
+                                             bio_result_file=bio_result_file))
+
+    # structure { geneset_name: {'gec', 'th_avg_gec', 'th_std_gec', 'obs_pvalue', 'fdr'} }
+    comparision_dict = defaultdict(dict)
+
+    # get the count GGEC for each geneset from the counter
+    for geneset, freq in sorted(Counter(gsm_list_biology).items(), key=lambda x: x[1], reverse=True):
+        comparision_dict[geneset]['gec'] = freq
+
+    montcarl_pvalue = []
+    print()
+    print('Computing p-values')
+    for geneset in tqdm.tqdm(unit_geneset_map):
+        '''
+        plot = plt.figure(1)
+        plt.hist(random_test_dict[geneset])
+        plt.show()
+        '''
+        K = hypgeoK_geneset_map[geneset]
+        n = for_top_x_pct_units * model.encoding_size
+        N = model.encoding_size
+        theoretical_mean = len(gsm_list) * hypgeom_mean(n, K, N)  # len(gsm_list) for sum of hypgeom
+        theoretical_var = len(gsm_list) * hypgeom_var(n, K, N)
+
+        # get p-value for each geneset for each random test
+        if geneset in random_test_dict:
+            for value in random_test_dict[geneset]:
+                montcarl_pvalue.append(stats.emp_p_value(value, theoretical_mean, theoretical_var ** 0.5))
+        else:
+            # 1 is added to pvalue for better approximation suggested in (North et al, 2002)
+            for _ in range(random_tests_count):
+                montcarl_pvalue.append(1.0)
+
+        # get p-value for each geneset for each observation
+        if geneset in comparision_dict:
+            pvalue = stats.emp_p_value(comparision_dict[geneset]['gec'], theoretical_mean, theoretical_var ** 0.5)
+            comparision_dict[geneset]['th_avg_gec'] = theoretical_mean
+            comparision_dict[geneset]['th_std_gec'] = theoretical_var ** 0.5
+            comparision_dict[geneset]['obs_pvalue'] = pvalue
+
+
+    # FDR correction
+    print("Computing FDR scores")
+    for geneset in tqdm.tqdm(comparision_dict):
+        count = count_greater(montcarl_pvalue, comparision_dict[geneset]['obs_pvalue'])
+        # probability of getting obs_pvalue or smaller
+        comparision_dict[geneset]['fdr'] = (len(montcarl_pvalue) - count) / len(montcarl_pvalue)
+
+    return comparision_dict
+
 
 def hypgeom_mean(n, K, N):
-    return n*K/N
+    return n * K / N
+
 
 def hypgeom_var(n, K, N):
-    return n*(K/N)*((N-K)/N)*((N-n)/(N-1))
+    return n * (K / N) * ((N - K) / N) * ((N - n) / (N - 1))
+
 
 def count_greater(arr, k):
     i = 0
@@ -87,128 +199,65 @@ def count_greater(arr, k):
             i += 1
     return i
 
-if __name__ == '__main__':
 
+def main():
     model_name = 'geodb_ae_89.net'
     model_folder = os.path.join('results', 'best_attmpt_2')
     model_file = os.path.join(model_folder, model_name)
-    result_filename = 'biology_result.txt'
+    result_filename = 'test_correct_biology.txt'
     bio_result_file = os.path.join(model_folder, result_filename)
     for_top_x_pct_units = 0.02
-    display_units_for_gsms = False
 
     labelled_data_folder = os.path.join('data')
-    labelled_data_files = ['GSE8052_asthma_1.txt']
+    labelled_data_files = ['GSE8052_asthma_1.txt', 'GSE8052_asthma_0.txt']
+    #labelled_data_files = ['GSE15061_aml.txt', 'GSE15061_mds.txt']
 
     gsm_labels = get_gsm_labels(labelled_data_files, labelled_data_folder)
-    gsm_list = gsm_labels[0]
 
     model = ae.Autoencoder.load_model(model_file, logdir=os.path.join('results', 'features_' + model_name))
     normed_split_path = os.path.join('data', 'normd_split_')
     split = 1
     unlabelled, labelled, validation, test = pkl.load(open(normed_split_path + str(split) + '.pkl', 'rb'))
 
-    biology_hash = get_result_file_hash(bio_result_file)
+    geneset_unit_map = get_result_file_dict(bio_result_file)
 
-    gsm_list_biology = []
+    comparision_dict_0 = enrichment(gsm_labels[0], model, geneset_unit_map, for_top_x_pct_units, [unlabelled, validation])
+    comparision_dict_1 = enrichment(gsm_labels[1], model, geneset_unit_map, for_top_x_pct_units, [unlabelled, validation])
 
-    for gsm in gsm_list:
-        gsm_list_biology.extend(get_gsm_biology(gsm, biology_hash, model, [unlabelled, validation],
-                                                for_top_x_pct_units=for_top_x_pct_units,
-                                                disp=display_units_for_gsms,
-                                                bio_result_file=bio_result_file))
-
-    rev_hash_bio = reverse_list_dict(biology_hash)
-    hypgeo_K_bio = {geneset: len(rev_hash_bio[geneset]) for geneset in rev_hash_bio}
-    hypgeo_n = for_top_x_pct_units*model.encoding_size
-
-    saved_monte_carlo = True
-    random_tests = 10
-    random_biology = [[]] * random_tests
-
-    if not saved_monte_carlo:
-        print('Running Monte Carlo Simulation')
-        # To ensure shuffling
-        _ = unlabelled.next_batch(unlabelled.num_examples)
-        random_gsm_list = gsm_list
-
-        for i in tqdm.tqdm(range(random_tests)):
-            random_biology[i] = Counter()
-            _, random_gsm_list = unlabelled.next_batch(len(gsm_list))
-            for gsm in random_gsm_list:
-                random_biology[i] += Counter(get_gsm_biology(gsm, biology_hash, model,
-                                                             [unlabelled, validation],
-                                                             for_top_x_pct_units=for_top_x_pct_units)
-                                             )
+    print(labelled_data_files[0]+" genesets")
+    print_comp_dict(comparision_dict_0)
+    print("")
+    print(labelled_data_files[1]+" genesets")
+    print_comp_dict(comparision_dict_1)
 
 
-    monte_carlo_filename = 'mc_save_'+model_name+'.pkl'
-    random_test_dict = defaultdict(list)
-    if not saved_monte_carlo:
-        try:
-            with open(monte_carlo_filename, 'rb') as f:
-                random_test_dict = pkl.load(f)
-        except FileNotFoundError:
-            print('Existing Monte Carlo Save not found for this model')
-            random_test_dict = defaultdict(list)
+    set1 = get_really_enriched(comparision_dict_0)
+    set2 = get_really_enriched(comparision_dict_1)
 
-        for test in random_biology:
-            for geneset in test:
-                random_test_dict[geneset] += [test[geneset]]
+    common =  set1.intersection(set2)
+    set1_unique = set1-set2
+    set2_unique = set2-set1
 
-        with open(monte_carlo_filename, 'wb') as f:
-            pkl.dump(random_test_dict, f)
-    else:
-        with open(monte_carlo_filename, 'rb') as f:
-            random_test_dict = pkl.load(f)
+    print_list = lambda x: ('{}\n'*len(x)).format(*x)
+    print('Common')
+    print(print_list(common))
 
-    max_tests = max([len(random_test_dict[geneset]) for geneset in random_test_dict])
-    print('Running Enrichment with {0} Monte Carlo Simulations'.format(max_tests))
+    print(labelled_data_files[0]+' Unique')
+    print(print_list(set1_unique))
+    print(labelled_data_files[1]+' Unique')
+    print(print_list(set2_unique))
 
-    comparision_dict = defaultdict(dict)
-    # structure { geneset_name: {'gec', 'th_avg_gec', 'th_std_gec', 'obs_pvalue', 'fdr'} }
 
-    for geneset, freq in sorted(Counter(gsm_list_biology).items(), key=lambda x: x[1], reverse=True):
-        comparision_dict[geneset]['gec'] = freq
+sort_comp_dict = lambda y, by: sorted(y, key=lambda x: (y[x][by], x))
 
-    montcarl_pvalue = []
+
+def get_really_enriched(comparision_dict):
+    return set([geneset for geneset in sort_comp_dict(comparision_dict, 'fdr') if comparision_dict[geneset]['fdr'] < 0.05])
+
+
+def print_comp_dict(comparision_dict):
     print()
-    print('Computing p-values')
-    for geneset in tqdm.tqdm(rev_hash_bio):
-        '''
-        plot = plt.figure(1)
-        plt.hist(random_test_dict[geneset])
-        plt.show()
-        '''
-        K = hypgeo_K_bio[geneset]
-        n = for_top_x_pct_units*model.encoding_size
-        N = model.encoding_size
-        theoretical_mean = len(gsm_list)*hypgeom_mean(n, K, N) # len(gsm_list) for sum of hypgeom
-        theoretical_var = len(gsm_list)*hypgeom_var(n, K, N)
-
-        if geneset in random_test_dict:
-            for value in random_test_dict[geneset]:
-                montcarl_pvalue.append(stats.emp_p_value(value, theoretical_mean, theoretical_var**0.5))
-        else:
-            for _ in range(random_tests):
-                montcarl_pvalue.append(1.0)
-
-        # 1 is added to pvalue for better approximation suggested in (North et al, 2002)
-        if geneset in comparision_dict:
-            pvalue = stats.emp_p_value(comparision_dict[geneset]['gec'], theoretical_mean, theoretical_var**0.5)
-            comparision_dict[geneset]['th_avg_gec'] = theoretical_mean
-            comparision_dict[geneset]['th_std_gec'] = theoretical_var**0.5
-            comparision_dict[geneset]['obs_pvalue'] = pvalue
-
-    for geneset in comparision_dict:
-        count = count_greater(montcarl_pvalue, comparision_dict[geneset]['obs_pvalue'])
-        # probability of getting obs_pvalue or smaller
-        comparision_dict[geneset]['fdr'] = (len(montcarl_pvalue)-count)/len(montcarl_pvalue)
-
-    print()
-    print('Really Enriched')
-    count = 0
-    for item in sorted(comparision_dict, key=lambda x: comparision_dict[x]['obs_pvalue']):
+    for item in sort_comp_dict(comparision_dict, 'obs_pvalue'):
         value = comparision_dict[item]['gec']
         mean = comparision_dict[item]['th_avg_gec']
         std = comparision_dict[item]['th_std_gec']
@@ -216,3 +265,6 @@ if __name__ == '__main__':
         fdr = comparision_dict[item]['fdr']
         print(item, ':', value, '\t', round(mean, 3), '±', round(std, 3), 'p:', pvalue, 'fdr:', fdr)
 
+if __name__ == '__main__':
+
+    main()

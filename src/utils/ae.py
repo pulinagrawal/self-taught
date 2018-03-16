@@ -192,6 +192,7 @@ class Autoencoder(object):
         else:
             noise = tf.random_uniform(tf.shape(prev_layer_output), maxval=1)
             prev_layer_output = tf.where(noise < self._denoise_keep_prob, prev_layer_output, tf.zeros(tf.shape(prev_layer_output), dtype=tf.float32))
+
         # prev_layer_output = tf.Print(prev_layer_output, [prev_layer_output, tf.shape(prev_layer_output), 'input'])
         layers = [dict(zip(['weights', 'biases'], _layer))
                   for _layer in zip(self._network_weights, self._network_biases)]
@@ -398,6 +399,15 @@ class Autoencoder(object):
         autoenc.setup()
 
         return autoenc
+
+    @classmethod
+    def get_identity_encoder(cls, input_size, name='identity_ae'):
+        feature_network = cls([input_size, input_size], name=name,
+                                         sparse=False, transfer_fct=tf.nn.relu, tf_multiplier=1)
+        feature_network.weights = [np.identity(input_size)]
+        feature_network.biases = [np.zeros(input_size)]
+        feature_network.setup()
+        return feature_network
 
     @property
     def encoding_size(self):

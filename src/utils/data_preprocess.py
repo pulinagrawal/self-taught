@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import os
 import pickle as pkl
+from src.utils import image as im
 
 
 def rankdata(a, method='average'):
@@ -159,10 +160,18 @@ if __name__ == '__main__':
         df_mat = df.as_matrix()
         print(df_mat.shape)
         df_mat = quantile_norm(df_mat.transpose())
+        '''
+        df_mean = np.mean(df_mat, axis=1, keepdims=True)
+        df_std = np.std(df_mat, axis=1, keepdims=True)
+        df_mat = df_mat-df_mean
+        df_mat = df_mat/df_std
+        df_min = np.min(df_mat)
+        df_mat = df_mat+abs(df_min)
         df_max = np.max(df_mat)
-        df_mat = df_mat/df_max
+        df_mat = df_mat/df_max'''
         dfn = pd.DataFrame(df_mat.transpose(), index=df.index, columns=df.columns)
         dfn = dfn.dropna(axis=0)
+        im.plot_genes(dfn.sample(1000))
         print(dfn.head())
         print(dfn.shape)
         pkl.dump(dfn, open(normed_path, 'wb'))
