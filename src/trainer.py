@@ -203,7 +203,7 @@ class SelfTaughtTrainer(object):
 
     def run_supervised_training(self):
         self.loss_log = [('training_loss', 'validation_loss')]
-        stop_for = SelfTaughtTrainer.early_stopping_criterion(5)
+        stop_for = SelfTaughtTrainer.early_stopping_criterion(50)
         last_epoch = 0
         validation_loss = 0
         save_dict = {}

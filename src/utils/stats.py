@@ -1,6 +1,20 @@
 import numpy as np
 from copy import copy
 from scipy.stats import norm
+from scipy.stats import hypergeom
+
+
+def hypgeom_mean(n, K, N):
+    return n * K / N
+
+
+def hypgeom_var(n, K, N):
+    return n * (K / N) * ((N - K) / N) * ((N - n) / (N - 1))
+
+
+def hypgeom_pmf(k, n, K, N):
+    dist = hypergeom(M=N, n=K, N=n)
+    return dist.pmf(k)
 
 def emp_p_value(x, m, s):
     return norm.sf(x, loc=m, scale=s)
