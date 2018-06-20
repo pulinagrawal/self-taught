@@ -12,6 +12,7 @@ from tensorflow.contrib.learn.python.learn.datasets import base
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from memory_profiler import profile
 
 tf.logging.set_verbosity(tf.logging.INFO)
 LEARNING_RATE_LIMIT = 0.00001
@@ -25,7 +26,7 @@ class SelfTaughtTrainer(object):
 
     def __init__(self, feature_network, output_network, batch_size,
                  unlabelled, labelled, validation, test, save_filename, validation_lab=None, run_folder=None,
-                 early_stopping=True, epoch_window_for_stopping=100, max_epochs=20000):
+                 early_stopping=True, epoch_window_for_stopping=3, max_epochs=20000):
         self._unlabelled = unlabelled
         print("Unlabelled Examples", self._unlabelled.num_examples if self._unlabelled else 0)
         self._labelled = labelled
@@ -121,6 +122,7 @@ class SelfTaughtTrainer(object):
                 i = 0
                 best_value = new_value
 
+    @profile
     def run_unsupervised_training(self):
         self.loss_log = [('training_loss', 'validation_loss', 'validation_reconstruction_loss')]
         stop_for_reconstruction_loss = SelfTaughtTrainer.early_stopping_criterion(self._epoch_window_for_stopping)
@@ -131,20 +133,22 @@ class SelfTaughtTrainer(object):
         try:
             while self._unlabelled.epochs_completed < self._max_epochs:
                 training_loss = self._feature_network.partial_fit(self._unlabelled.next_batch(self._batch_size)[0])
-                self.loss_log.append((training_loss, validation_loss, validation_reconstruction_loss))
+                #self.loss_log.append((training_loss, validation_loss, validation_reconstruction_loss))
 
                 if self._unlabelled.epochs_completed > last_epoch or start_flag:
-                    start_flag = False
                     last_epoch = self._unlabelled.epochs_completed
 
                     validation_loss, validation_reconstruction_loss = \
                         self._feature_network.loss(self._validation.next_batch(self._validation.num_examples)[0])
                     reconstruction = self._feature_network.reconstruct(self._validation.next_batch(100)[0])
 
-                    print("{0} Unsupervised Epochs Completed. Training_loss = {3}, Validation loss = {1},"
-                          " reconstruction loss = {2}".format(last_epoch, validation_loss, validation_reconstruction_loss, training_loss))
-
-                    self.save_dict[last_epoch % self._epoch_window_for_stopping] = (self._save_filename+'_ae_'+str(last_epoch)+'.net', self._feature_network.get_save_state())
+                    print("{0} Unsupervised Epochs Completed. Training_loss = {1}, Validation loss = {2},"
+                          " reconstruction loss = {3}".format(last_epoch, training_loss, validation_loss,
+                                                              validation_reconstruction_loss))
+                    if start_flag or validation_reconstruction_loss < self.save_dict['best'][2]:
+                        start_flag = False
+                        self.save_dict['best'] = (self._save_filename+'_ae_'+str(last_epoch)+'.net',
+                                              self._feature_network.get_save_state(), validation_reconstruction_loss)
                     reconstruction_loss_condition = stop_for_reconstruction_loss(validation_reconstruction_loss)
                     """
                     if self._early_stopping:
@@ -159,14 +163,13 @@ class SelfTaughtTrainer(object):
             try:
                 self._after_unsupervised_training()
             finally:
-                self.save_feature_models()
+                self.save_best_model()
         return validation_reconstruction_loss
 
-    def save_feature_models(self):
-        for model_number in self.save_dict:
-            filename = self.save_dict[model_number][0]
-            save_state = self.save_dict[model_number][1]
-            self._feature_network.save(filename, save_state)
+    def save_best_model(self):
+        filename = self.save_dict['best'][0]
+        save_state = self.save_dict['best'][1]
+        self._feature_network.save(filename, save_state)
 
     def build_validation_features(self):
         validation_batch_input, validation_batch_labels = self._validation_lab.next_batch(self._validation_lab.num_examples)
@@ -186,7 +189,7 @@ class SelfTaughtTrainer(object):
     def _after_unsupervised_training(self):
         self.build_validation_features()
         #self.log_loss('unsupervised_log.csv')
-        self.save_feature_models()
+        self.save_best_model()
 
     @staticmethod
     @gen_utils.ready_generator
