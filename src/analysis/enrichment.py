@@ -57,6 +57,20 @@ def print_unit_biology(unit_num, biology_result_file):
                         break
                 break
 
+def get_activations(gsm, datasets, model):
+    input_genes = get_input(gsm, datasets)
+    if input_genes is not None:
+        model_input = np.expand_dims(input_genes, axis=0)
+        activations = model.encoding(model_input)[0]
+    return activations
+
+def build_genelist_from_units(units, geneset_unit_map, display=False, bio_result_file=''):
+    geneset_list = []
+    for unit in units:
+        geneset_list.extend(geneset_unit_map[unit])
+        if display and bio_result_file != '':
+            print_unit_biology(unit, bio_result_file)
+    return geneset_list
 
 def get_genesets(gsm, geneset_unit_map, model, datasets, for_top_x_pct_units=0.1, random=False, disp=False,
                  bio_result_file=''):
@@ -75,24 +89,16 @@ def get_genesets(gsm, geneset_unit_map, model, datasets, for_top_x_pct_units=0.1
     """
     n_units_selected = int(model.encoding_size * for_top_x_pct_units)
     if not random:
-        input_genes = get_input(gsm, datasets)
-        if input_genes is not None:
-            model_input = np.expand_dims(input_genes, axis=0)
-            activations = model.encoding(model_input)[0]
-
+        activations = get_activations(gsm, datasets, model)
         sorted_units = sorted(enumerate(activations), key=lambda unit: unit[1], reverse=True)
-        top_units = [unit + 1 for unit, _ in sorted_units[:n_units_selected]]
+        top_units = [unit for unit, _ in sorted_units[:n_units_selected]]
         # added one to unit number because biology_results file assume units start with 1
     else:
         top_units = np.random.randint(0, model.encoding_size, size=n_units_selected)
-        top_units = [unit + 1 for unit in top_units]
         # added one to unit number because biology_results file assume units start with 1
 
-    geneset_list = []
-    for unit in top_units:
-        geneset_list.extend(geneset_unit_map[unit])
-        if disp and bio_result_file != '':
-            print_unit_biology(unit, bio_result_file)
+    top_units = [unit + 1 for unit in top_units]
+    geneset_list = build_genelist_from_units(top_units, geneset_unit_map, disp, bio_result_file)
 
     return list(set(geneset_list))
 
@@ -164,7 +170,7 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
 
     print('Running Monte Carlo Simulation with binomial theoretical')
     montecarlo_pvalues, random_dict = get_monte_carlo_pvalues(len(gsm_list), geneset_unit_map, model, datasets, for_top_x_pct_units,
-                                                hypgeoK_geneset_map, tests=1000)
+                                                hypgeoK_geneset_map, tests=100)
 
     ggec = get_ggec(gsm_list, geneset_unit_map, model, datasets, for_top_x_pct_units)
 
@@ -201,7 +207,7 @@ def enrichment(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datasets,
     hypgeoK_geneset_map = {geneset: len(unit_geneset_map[geneset]) for geneset in unit_geneset_map}
 
     # Run Monte Carlo Simulations
-    random_tests_count = 100
+    random_tests_count = 10
     empty_list = partial(list, [0] * random_tests_count)
     random_test_dict = defaultdict(empty_list)
     print('Running Monte Carlo Simulation')
