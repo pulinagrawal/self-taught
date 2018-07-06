@@ -301,28 +301,19 @@ def main():
     model_name = 'geodb_ae_89.net'
     model_folder = os.path.join('results', 'best_attmpt_2')
     model_file = os.path.join(model_folder, model_name)
+    model = ae.Autoencoder.load_model(model_file, logdir=os.path.join('results', 'features_' + model_name))
+
     result_filename = 'best_sparse_biology.txt'
     print("using "+result_filename)
     bio_result_file = os.path.join(model_folder, result_filename)
     for_top_x_pct_units = 0.02
-    model = ae.Autoencoder.load_model(model_file, logdir=os.path.join('results', 'features_' + model_name))
+
     normed_split_path = os.path.join('data', 'normd_split_')
     split = 1
     unlabelled, labelled, validation, test = pkl.load(open(normed_split_path + str(split) + '.pkl', 'rb'))
 
-    labelled_data_folder = os.path.join('data')
-    #labelled_data_files = ['GSE8052_asthma_1.txt', 'GSE8052_asthma_0.txt']
     labelled_data_files = ['GSE15061_aml.txt', 'GSE15061_mds.txt']
-    #labelled_data_files = ['GDS4602_3.txt', 'GDS4602_4.txt']
-
-    gsm_labels = get_gsm_labels(labelled_data_files, labelled_data_folder)
-    for class_id in gsm_labels:
-        print("size before:", len(gsm_labels[class_id]))
-        for i, gsm in enumerate(gsm_labels[class_id]):
-            if get_input(gsm, datasets=[unlabelled, labelled]) is None:
-                gsm_labels[class_id].pop(i)
-        print("size after:", len(gsm_labels[class_id]))
-
+    gsm_labels = extract_labels(labelled_data_files, [labelled, unlabelled])
     geneset_unit_map = get_result_file_dict(bio_result_file)
 
     '''
@@ -332,16 +323,15 @@ def main():
     labelled_data_files = ['Random1', 'Random2']
     '''
     comparision_dict_0 = enrichment_ref(gsm_labels[0], model, geneset_unit_map, for_top_x_pct_units, [unlabelled, validation])
-    comparision_dict_1 = enrichment_ref(gsm_labels[1], model, geneset_unit_map, for_top_x_pct_units, [unlabelled, validation])
-
     print(labelled_data_files[0]+" genesets")
     print_comp_dict(comparision_dict_0)
+    set1 = get_really_enriched(comparision_dict_0)
+
     print("")
+
+    comparision_dict_1 = enrichment_ref(gsm_labels[1], model, geneset_unit_map, for_top_x_pct_units, [unlabelled, validation])
     print(labelled_data_files[1]+" genesets")
     print_comp_dict(comparision_dict_1)
-
-
-    set1 = get_really_enriched(comparision_dict_0)
     set2 = get_really_enriched(comparision_dict_1)
 
     common = set1.intersection(set2)
@@ -371,6 +361,21 @@ def main():
                 gene = geneset
                 fdr = filename_dict[filename_set][2][geneset]['fdr']
                 writer.writerow([geneset, fdr])
+
+
+def extract_labels(labelled_data_files, datasets):
+    labelled_data_folder = os.path.join('data')
+    # labelled_data_files = ['GSE8052_asthma_1.txt', 'GSE8052_asthma_0.txt']
+    # labelled_data_files = ['GDS4602_3.txt', 'GDS4602_4.txt']
+    gsm_labels = get_gsm_labels(labelled_data_files, labelled_data_folder)
+    for class_id in gsm_labels:
+        print("size before:", len(gsm_labels[class_id]))
+        for i, gsm in enumerate(gsm_labels[class_id]):
+            if get_input(gsm, datasets=datasets) is None:
+                gsm_labels[class_id].pop(i)
+        print("size after:", len(gsm_labels[class_id]))
+    return gsm_labels
+
 
 sort_comp_dict = lambda y, by: sorted(y, key=lambda x: (y[x][by], x))
 
