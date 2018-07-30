@@ -24,8 +24,8 @@ def get_gene_list():
 
 if __name__ == '__main__':
 
-   model_name = 'geodb_ae_5.net'
-   model_folder = os.path.join('results', 'best_denoise_corr')
+   model_name = 'geodb_full_data_ae_2242.net'
+   model_folder = os.path.join('results', 'full_data_try4_best')
    model_file = os.path.join(model_folder, model_name)
 
    model = ae.Autoencoder.load_model(model_file, logdir=os.path.join('results', 'features_'+model_name))
