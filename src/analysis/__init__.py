@@ -77,7 +77,7 @@ def extract_labels(labelled_data_files, datasets):
         print("size after:", len(gsm_labels[class_id]))
     return gsm_labels
 
-def setup_analysis(labelled_data_files, model_folder, model_name, normed_split_path, result_filename, split):
+def setup_analysis(labelled_data_files, model_folder, normed_split_path, model_name='model.net', result_filename='biology.txt', split=1):
     model_file = os.path.join(model_folder, model_name)
     model = ae.Autoencoder.load_model(model_file, logdir=os.path.join('results', 'features_' + model_name))
     print("using " + result_filename)
