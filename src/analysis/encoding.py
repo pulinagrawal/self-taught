@@ -1,10 +1,9 @@
-from src.utils import ae
 import numpy as np
 import os
 import csv
-import matplotlib.pyplot as plt
 import pickle as pkl
 import pandas as pd
+from src.utils import ae
 
 def get_top_features(features, std_away=2, top_x_pct=None):
     if top_x_pct is not None:
@@ -18,17 +17,17 @@ def get_top_features(features, std_away=2, top_x_pct=None):
     return ids
 
 def get_gene_list():
-    dataset = pkl.load(open(os.path.join('data', 'transp_normd.pkl'), 'rb'))
+    dataset = pkl.load(open(os.path.join('/mnt/c/Users/pulin/Projects/self-taught/data', 'transp_normd_1norm.pkl'), 'rb'))
     # geodb_training used 'transp_normd_1norm.pkl', does not matter, no genes removed between the steps
     return dataset.columns
 
 if __name__ == '__main__':
 
-   model_name = 'geodb_full_data_ae_2242.net'
-   model_folder = os.path.join('results', 'full_data_try4_best')
+   model_name = 'geodb_ae_89.net'
+   model_folder = os.path.join('/mnt/c/Users/pulin/Projects/self-taught/results', 'best_attmpt_2')
    model_file = os.path.join(model_folder, model_name)
 
-   model = ae.Autoencoder.load_model(model_file, logdir=os.path.join('results', 'features_'+model_name))
+   model = ae.Autoencoder.load_model(model_file, logdir=os.path.join('/mnt/c/Users/pulin/Projects/self-taught/results', 'features_'+model_name))
    features = pd.DataFrame.from_records(model.weights[0])
    output_file = os.path.join(model_folder, 'features_'+model_name.split('.')[0]+'.csv')
 
