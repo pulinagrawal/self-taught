@@ -30,9 +30,9 @@ def get_features(model_folder, model_name='model.net'):
     features = features.set_index(genelist)
 
     for idx in features.iterrows():
-    geneids = str(idx[0]).split(' /// ')
-    if len(geneids) > 1:
-        features = features.drop(idx[0])
+        geneids = str(idx[0]).split(' /// ')
+        if len(geneids) > 1:
+            features = features.drop(idx[0])
 
     return features
 
