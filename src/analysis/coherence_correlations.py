@@ -4,6 +4,7 @@ import math
 import os
 import pandas as pd
 from src.analysis.coherence import get_coherence
+from src.analysis.encoding import get_features
 
 def get_weights_data(path):
     weights_filename = os.path.join(path, 'features_model.csv')
@@ -31,11 +32,14 @@ def main(path):
     # This file has term -> goID map
     term_map_filename = path+"go_term_map.txt"
 
-    biology_filename = path+'best_sparse_biology.txt'
+    biology_filename = path+'biology.txt'
 
     coherence, unit_geneset_map = get_coherence(biology_filename, go_terms_filename, term_map_filename)
 
-    weights_data = get_weights_data(path)
+    if os.path.exists(os.path.join(path, 'features_model.csv')):
+        weights_data = get_weights_data(path)
+    else:
+        weights_data = get_features(path)
 
     unit_corr_matrix = get_corr_matrix(coherence, weights_data)
 
@@ -44,8 +48,8 @@ def main(path):
     ax = fig.add_subplot(111)
     cax = ax.matshow(unit_corr_matrix, vmin=-1, vmax=1)
     fig.colorbar(cax)
+    plt.savefig(path+'coherence_corr.jpg')
     plt.show()
-
 
 
 if __name__ == '__main__':
@@ -53,6 +57,6 @@ if __name__ == '__main__':
         path = sys.argv[1]
     else:
         path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\full_data_try4_best\\"
-        path = "/mnt/c/Users/pulin/Projects/self-taught/results/full_data_try4_best/"
+        path = "/mnt/c/Users/pulin/Projects/self-taught/results/full_data_try4_best2/"
 
     main(path)

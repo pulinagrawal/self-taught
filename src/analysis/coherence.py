@@ -5,6 +5,11 @@ import math
 import rpy2
 import rpy2.robjects as ro
 import numpy as np
+from functools import lru_cache
+
+from pylru import lrudecorator
+
+sys.path.extend(["/mnt/c/Users/pulin/Projects/self-taught/src"])
 from src.analysis.analysis_utils import get_result_file_dict
 from src.analysis.scrape_for_go_id import build_map
 from tqdm import tqdm
@@ -18,8 +23,9 @@ def setup_for_r():
             d <- godata("org.Hs.eg.db", ont="BP", computeIC=TRUE)
     ''')
 
+@lru_cache(maxsize=7000)
 def r_go_sim(goid1, goid2):
-    go_sim_call = 'goSim("{0}", "{1}", d, measure="Lin")'.format(goid1, goid2)
+    go_sim_call = 'goSim("{0}", "{1}", d, measure="Rel")'.format(goid1, goid2)
     result = ro.r(go_sim_call)
     return result[0]
 
@@ -41,6 +47,7 @@ def compute_mean_coherence(unit_geneset_pairs_map):
         for pair in unit_geneset_pairs_map[unit]:
             try:
                 coher = r_go_sim(pair[0], pair[1])
+                print(r_go_sim.cache_info())
                 coherences.append(coher)
             except rpy2.rinterface.RRuntimeError:
                 pass
@@ -59,7 +66,7 @@ def main(path):
     # This file has term -> goID map
     term_map_filename = path+"go_term_map.txt"
 
-    coherence, unit_geneset_map = get_coherence(biology_filename, go_terms_filename, term_map_filename, use_web=True)
+    coherence, unit_geneset_map = get_coherence(biology_filename, go_terms_filename, term_map_filename, use_web=False)
 
     # Write coherence to file
     coherence_list = []
@@ -72,7 +79,7 @@ def main(path):
                 print(unit_geneset_map[unit])
                 print('Coherence {}'.format(coherence[unit]))
                 coherence_list.append(coherence[unit])
-                table.writerow(unit, (coherence[unit], len(unit_geneset_map[unit]), unit_geneset_map[unit]))
+                table.writerow((unit, coherence[unit], len(unit_geneset_map[unit]), unit_geneset_map[unit]))
 
     print('Coherence mean:{}'.format(np.mean(coherence_list)))
     print('Coherence stdv:{}'.format(np.std(coherence_list)))
@@ -106,8 +113,8 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         path = sys.argv[1]
     else:
-        path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\full_data_try4_best\\"
-        path = "/mnt/c/Users/pulin/Projects/self-taught/results/full_data_try4_best/"
+        path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\full_data_try4_best2\\"
+        path = "/mnt/c/Users/pulin/Projects/self-taught/results/full_data_try4_best2/"
 
     main(path)
 
