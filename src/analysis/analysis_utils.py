@@ -18,6 +18,15 @@ def print_unit_biology(unit_num, biology_result_file):
                         break
                 break
 
+def get_delta_activations(gsms, datasets, model):
+    input_genes0 = get_input(gsms[0], datasets)
+    input_genes1 = get_input(gsms[1], datasets)
+    if input_genes0 is not None and input_genes1 is not None:
+        delta_input = input_genes0-input_genes1
+        model_input = np.expand_dims(delta_input, axis=0)
+        activations = model.encoding(model_input)[0]
+    return activations
+
 def get_activations(gsm, datasets, model):
     input_genes = get_input(gsm, datasets)
     if input_genes is not None:
@@ -38,14 +47,14 @@ def get_indexed_label_hashmap(dataset, epochs):
     return dict(zip(dataset.labels.tolist(), range(len(dataset.labels))))
 
 def get_input(gsm, datasets):
+    data = None
     for dataset in datasets:
         labels_map = get_indexed_label_hashmap(dataset, dataset.epochs_completed)
-        try:
+        if gsm in labels_map:
             data = dataset.images[labels_map[gsm]]
-            return data
-        except KeyError:
-            print('GSM not found in any datasets')
-    return None
+    if data is None:
+       print('GSM not found in any dataset')
+    return data
 
 def get_result_file_dict(biology_result_file):
     biology = defaultdict(list)
@@ -68,12 +77,13 @@ def extract_labels(labelled_data_files, datasets):
     # labelled_data_files = ['GSE8052_asthma_1.txt', 'GSE8052_asthma_0.txt']
     # labelled_data_files = ['GDS4602_3.txt', 'GDS4602_4.txt']
     gsm_labels = get_gsm_labels(labelled_data_files, labelled_data_folder)
-    for class_id in gsm_labels:
-        print("size before:", len(gsm_labels[class_id]))
-        for i, gsm in enumerate(gsm_labels[class_id]):
+    for filename in gsm_labels:
+        print(filename)
+        print("size before:", len(gsm_labels[filename]))
+        for i, gsm in enumerate(gsm_labels[filename]):
             if get_input(gsm, datasets=datasets) is None:
-                gsm_labels[class_id].pop(i)
-        print("size after:", len(gsm_labels[class_id]))
+                gsm_labels[filename].pop(i)
+        print("size after:", len(gsm_labels[filename]))
     return gsm_labels
 
 def setup_analysis(labelled_data_files, model_folder, normed_split_path, model_name='model.net', result_filename='biology.txt', split=1):

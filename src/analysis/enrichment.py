@@ -5,9 +5,12 @@ from collections import Counter
 from functools import partial
 from bisect import bisect
 from src.analysis.analysis_utils import setup_analysis, build_genesetlist_from_units, get_activations
+from src.analysis.analysis_utils import get_delta_activations, get_activations
 import numpy as np
 import os
 import tqdm
+import csv
+import json
 
 def get_activated_genesets(gsm, geneset_unit_map, model, datasets, for_top_x_pct_units=0.1, random=False, disp=False,
                  bio_result_file=''):
@@ -26,7 +29,10 @@ def get_activated_genesets(gsm, geneset_unit_map, model, datasets, for_top_x_pct
     """
     n_units_selected = int(model.encoding_size * for_top_x_pct_units)
     if not random:
-        activations = get_activations(gsm, datasets, model)
+        if isinstance(gsm, tuple):
+            activations = get_delta_activations(gsm, datasets, model)
+        else:
+            activations = get_activations(gsm, datasets, model)
         sorted_units = sorted(enumerate(activations), key=lambda unit: unit[1], reverse=True)
         top_units = [unit for unit, _ in sorted_units[:n_units_selected]]
         # added one to unit number because biology_results file assume units start with 1
@@ -233,76 +239,7 @@ def count_greater(arr, k):
             i += 1
     return i
 
-
-def main():
-    model_name = 'geodb_ae_89.net'
-    model_folder = os.path.join('results', 'best_attmpt_2')
-
-    labelled_data_files = ['GSE8671_series_matrix.txt', 'GSE15061_mds.txt']
-
-    result_filename = 'best_sparse_biology.txt'
-
-    normed_split_path = os.path.join('data', 'normd_split_')
-    split = 1
-
-    for_top_x_pct_units = 0.02
-
-    dataset, geneset_unit_map, gsm_labels, model = setup_analysis(labelled_data_files, model_folder, normed_split_path,
-                                                                model_name, result_filename, split)
-
-    '''
-    _ = unlabelled.next_batch(unlabelled.num_examples)
-    _, gsm_labels[0] = unlabelled.next_batch(len(gsm_labels[0]))
-    _, gsm_labels[1] = unlabelled.next_batch(len(gsm_labels[1]))
-    labelled_data_files = ['Random1', 'Random2']
-    '''
-    comparision_dict_0 = enrichment_ref(gsm_labels[0], model, geneset_unit_map, for_top_x_pct_units, dataset)
-    print(labelled_data_files[0]+" genesets")
-    print_comp_dict(comparision_dict_0)
-    set1 = get_really_enriched(comparision_dict_0)
-
-    print("")
-
-    comparision_dict_1 = enrichment_ref(gsm_labels[1], model, geneset_unit_map, for_top_x_pct_units, dataset)
-    print(labelled_data_files[1]+" genesets")
-    print_comp_dict(comparision_dict_1)
-    set2 = get_really_enriched(comparision_dict_1)
-
-    common = set1.intersection(set2)
-    set1_unique = set1-set2
-    set2_unique = set2-set1
-
-    print_list = lambda x: ('{}\n'*len(x)).format(*x)
-    print('Common')
-    print(print_list(common))
-
-    print(labelled_data_files[0]+' Unique')
-    print(print_list(sorted(set1_unique)))
-    print(labelled_data_files[1]+' Unique')
-    print(print_list(sorted(set2_unique)))
-
-    result_path = os.path.join('results')
-    filename_dict = defaultdict(list)
-    filename_dict[1] = [common, labelled_data_files[0]+'_vs_'+labelled_data_files[1]+'.csv', comparision_dict_0]
-    filename_dict[2] = [set1_unique, labelled_data_files[0]+'.csv', comparision_dict_0]
-    filename_dict[3] = [set2_unique, labelled_data_files[1]+'.csv', comparision_dict_1]
-    import csv
-
-    for filename_set in filename_dict:
-        with open(os.path.join(result_path, filename_dict[filename_set][1]), 'w') as csvfile:
-            writer = csv.writer(csvfile)
-            for geneset in filename_dict[filename_set][0]:
-                gene = geneset
-                fdr = filename_dict[filename_set][2][geneset]['fdr']
-                writer.writerow([geneset, fdr])
-
-
 sort_comp_dict = lambda y, by: sorted(y, key=lambda x: (y[x][by], x))
-
-
-def get_really_enriched(comparision_dict):
-    return set([geneset for geneset in sort_comp_dict(comparision_dict, 'fdr') if comparision_dict[geneset]['fdr'] < 0.05])
-
 
 def print_comp_dict(comparision_dict):
     print()
@@ -313,6 +250,66 @@ def print_comp_dict(comparision_dict):
         pvalue = comparision_dict[item]['obs_pvalue']
         fdr = comparision_dict[item]['fdr']
         print(item, ':', value, '\t', round(mean, 3), '±', round(std, 3), 'p:', pvalue, 'fdr:', fdr)
+
+def main():
+    model_name = 'geodb_ae_89.net'
+    model_folder = os.path.join('results', 'best_attmpt_2')
+
+    labelled_data_files = ['GSE8671_case.txt', 'GSE8671_control.txt', 'GSE8671_series_matrix.txt']
+    comparision = [labelled_data_files[0],
+                   labelled_data_files[1],
+                   labelled_data_files[2],
+                   (labelled_data_files[0],labelled_data_files[1])
+                   ]
+
+    result_filename = 'best_sparse_biology.txt'
+    normed_split_path = os.path.join('data', 'normd_split_')
+    split = 1
+    for_top_x_pct_units = 0.02
+
+
+    dataset, geneset_unit_map, gsm_labels, model = setup_analysis(labelled_data_files, model_folder, normed_split_path,
+                                                                model_name, result_filename, split)
+
+    for i, file in enumerate(comparision):
+        if isinstance(file, tuple):
+            gsm_labels[file] = list(zip(gsm_labels[file[0]],gsm_labels[file[1]]))
+
+    sets = {}
+
+    for file in comparision:
+            enriched = enrichment_ref(gsm_labels[file], model,
+                                                geneset_unit_map,
+                                                for_top_x_pct_units, dataset)
+            print(str(file)+" genesets")
+            fdr_filter = lambda enriched: set([geneset for geneset in sort_comp_dict(enriched, 'fdr') if enriched[geneset]['fdr'] < 0.05])
+            print_comp_dict(enriched)
+            sets[file] = fdr_filter(enriched)
+            print("")
+
+    all=set.union(*sets.values())
+    set_data = {}
+    for geneset in all:
+        set_data[geneset] = [ 1 if geneset in sets[file] else 0 for file in sets ]
+
+    with open(os.path.join(model_folder,'comparison.csv'), 'w') as datafile:
+        writer = csv.writer(datafile, delimiter=';')
+        writer.writerow(["Geneset Name", *[file[0]+'-'+file[1] if isinstance(file, tuple) else file for file in sets]])
+        for geneset in set_data:
+            writer.writerow([geneset, *set_data[geneset]])
+
+    meta = {}
+    meta["file"]="comparison.csv"
+    meta["name"]="Genset Comparison"
+    meta["header"]=0
+    meta["separator"]=";"
+    meta["skip"]=0
+    meta["meta"]=[{"type":"id", "index":0, "name": "Geneset Name"}]
+    meta["sets"]=[{"format":"binary", "start":1, "end": len(comparision)+1}]
+    meta_json = json.dumps(meta)
+
+    with open(os.path.join(model_folder,'comparison.json'), 'w') as jsonfile:
+        jsonfile.write(meta_json)
 
 if __name__ == '__main__':
 
