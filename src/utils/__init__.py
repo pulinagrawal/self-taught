@@ -28,7 +28,7 @@ def get_gsm_labels(file_list, folder='.'):
             header = f.readline()
             header = header.split('\n')[0]
             gsms = header.split('\t')[1:]
-            gsm_labels[i] = gsms
+            gsm_labels[file] = gsms
             i = i+1
     return gsm_labels
 

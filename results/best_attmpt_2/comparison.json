@@ -1,0 +1,8 @@
+{"skip": 0,
+ "sets": [{"end": 5, "start": 1, "format": "binary"}],
+ "file": "comparison.csv",
+ "meta": [{"index": 0, "name": "Geneset Name", "type": "id"}],
+ "separator": ";",
+ "header": 0,
+ "name": "Genset Comparison"
+}
