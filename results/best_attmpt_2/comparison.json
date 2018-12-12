@@ -1,4 +1,5 @@
-{"skip": 0,
+{
+ "skip": 0,
  "sets": [{"end": 4, "start": 1, "format": "binary"}],
  "file": "https://raw.githubusercontent.com/pulinagrawal/self-taught/upset/results/best_attmpt_2/comparison.csv",
  "meta": [{"index": 0, "name": "Geneset Name", "type": "id"}],
