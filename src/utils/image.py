@@ -1,7 +1,7 @@
 import numpy as np
 import pickle as pkl
 import os
-from src.utils import ae
+from utils import ae
 import matplotlib.pyplot as plt
 
 def reshape_for_display(image_pixels):

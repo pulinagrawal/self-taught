@@ -3,16 +3,15 @@ import datetime as dt
 import os
 import csv
 
-from src.utils import ae
-from src.utils import ffd
-import src.utils.generator as gen_utils
+from utils import ae
+from utils import ffd
+import utils.generator as gen_utils
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 from tensorflow.contrib.learn.python.learn.datasets import base
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from memory_profiler import profile
 
 tf.logging.set_verbosity(tf.logging.INFO)
 LEARNING_RATE_LIMIT = 0.00001
@@ -26,7 +25,7 @@ class SelfTaughtTrainer(object):
 
     def __init__(self, feature_network, output_network, batch_size,
                  unlabelled, labelled, validation, test, save_filename, validation_lab=None, run_folder=None,
-                 early_stopping=True, epoch_window_for_stopping=3, max_epochs=20000):
+                 early_stopping=True, epoch_window_for_stopping=1, max_epochs=20000):
         self._unlabelled = unlabelled
         print("Unlabelled Examples", self._unlabelled.num_examples if self._unlabelled else 0)
         self._labelled = labelled
@@ -122,7 +121,6 @@ class SelfTaughtTrainer(object):
                 i = 0
                 best_value = new_value
 
-    @profile
     def run_unsupervised_training(self):
         self.loss_log = [('training_loss', 'validation_loss', 'validation_reconstruction_loss')]
         stop_for_reconstruction_loss = SelfTaughtTrainer.early_stopping_criterion(self._epoch_window_for_stopping)

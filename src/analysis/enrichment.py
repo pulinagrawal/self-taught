@@ -4,7 +4,7 @@ from collections import defaultdict
 from collections import Counter
 from functools import partial
 from bisect import bisect
-from src.analysis import setup_analysis, build_genesetlist_from_units, get_activations
+from src.analysis.analysis_utils import setup_analysis, build_genesetlist_from_units, get_activations
 import numpy as np
 import os
 import tqdm
@@ -238,7 +238,7 @@ def main():
     model_name = 'geodb_ae_89.net'
     model_folder = os.path.join('results', 'best_attmpt_2')
 
-    labelled_data_files = ['GSE15061_aml.txt', 'GSE15061_mds.txt']
+    labelled_data_files = ['GSE8671_series_matrix.txt', 'GSE15061_mds.txt']
 
     result_filename = 'best_sparse_biology.txt'
 
@@ -247,8 +247,8 @@ def main():
 
     for_top_x_pct_units = 0.02
 
-    dataset, geneset_unit_map, gsm_labels, model = setup_analysis(labelled_data_files, model_folder, model_name,
-                                                               normed_split_path, result_filename, split)
+    dataset, geneset_unit_map, gsm_labels, model = setup_analysis(labelled_data_files, model_folder, normed_split_path,
+                                                                model_name, result_filename, split)
 
     '''
     _ = unlabelled.next_batch(unlabelled.num_examples)

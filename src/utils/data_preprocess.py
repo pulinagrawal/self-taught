@@ -173,7 +173,7 @@ def preprocess(filename):
     # save scaled
     scaled_filename = output_filename[:-4]+'_scaled.pkl'
     plot_file = scaled_filename[:-4]+'_plot.svg'
-    fig = im.plot_genes(df.sample(len(df.columns)))\
+    fig = im.plot_genes(df.sample(len(df.columns)))
     fig.savefig(plot_file, format='svg')
     fig.clear()
     pkl.dump(df, open(scaled_filename, 'wb'), protocol=4)

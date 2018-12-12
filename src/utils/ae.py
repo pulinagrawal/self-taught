@@ -15,7 +15,7 @@ class Autoencoder(object):
                  sparse=True, sparsity=0.1, transfer_fct=tf.nn.sigmoid, beta=3, step=0,
                  reconstruction_batch_size=100, lambda_=0, tied_weights=True,
                  keep_prob=0.5, denoise_keep_prob=0.9, dynamic_learning_rate=False,
-                 momentum=0.8, tf_multiplier=10, zero_noise=True, logdir='summary'):
+                 momentum=0.8, tf_multiplier=10, zero_noise=True, logdir='summary', summary_image=False):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
@@ -42,6 +42,7 @@ class Autoencoder(object):
 
         self.graph = tf.Graph()
         self.summaries = {}
+        self.summary_image=summary_image
         with self.graph.as_default():
             # TODO: Serialization maybe possible if the session object is instantiated later.
             # tf Graph input
@@ -69,16 +70,17 @@ class Autoencoder(object):
                     [self.summaries['cost'], self.summaries['latent_loss'], self.summaries['beta'],
                      self.summaries['learning_rate']])
 
-            with tf.name_scope(self._name + '/reconstruction/'):
-                output_image = self.reshape_tensor_for_display(self._layers[-1], recon_batch_size)
-                input_image = self.reshape_tensor_for_display(self._x, recon_batch_size)
-                self.summaries['reconstructed_image'] = tf.summary.image('reconstructed_images', output_image)
-                self.summaries['input_image'] = tf.summary.image('input_images', input_image)
-                self.summary_feature_images()
-                self.image_summaries = tf.summary.merge([self.summaries['reconstructed_image'],
-                                                         self.summaries['input_image'],
-                                                         self.summaries['feature_images']
-                                                         ])
+            if self.summary_image:
+                with tf.name_scope(self._name + '/reconstruction/'):
+                    output_image = self.reshape_tensor_for_display(self._layers[-1], recon_batch_size)
+                    input_image = self.reshape_tensor_for_display(self._x, recon_batch_size)
+                    self.summaries['reconstructed_image'] = tf.summary.image('reconstructed_images', output_image)
+                    self.summaries['input_image'] = tf.summary.image('input_images', input_image)
+                    self.summary_feature_images()
+                    self.image_summaries = tf.summary.merge([self.summaries['reconstructed_image'],
+                                                             self.summaries['input_image'],
+                                                             self.summaries['feature_images']
+                                                             ])
         self.start_session()
 
     def reshape_tensor_for_display(self, tensor, batch_size='default'):
@@ -198,7 +200,7 @@ class Autoencoder(object):
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
             with tf.name_scope(self._name + '/hidden{0}/'.format(i)):
-		current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])*self.multiplier, name='units')
+                current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])*self.multiplier, name='units')
                 #current_layer = tf.Print(current_layer, [current_layer, tf.shape(current_layer), 'current_layer'])
             self._layers.append(current_layer)
             if i == len(self._network_architecture) - 2:
@@ -332,12 +334,20 @@ class Autoencoder(object):
 
     def reconstruct(self, input_tensor):
         """ Use Autoencoder to reconstruct given data. """
-        reconstruction, reconstruction_summary = self._sess.run((self._layers[-1], self.image_summaries),
-                                                                feed_dict={self._x: input_tensor,
-                                                                           self._keep_prob: 1.0,
-                                                                           self._denoise_keep_prob: 1.0
-                                                                           })
-        self.train_writer.add_summary(reconstruction_summary, self.step)
+        if self.summary_image:
+            reconstruction, reconstruction_summary = self._sess.run((self._layers[-1], self.image_summaries),
+                                                                    feed_dict={self._x: input_tensor,
+                                                                               self._keep_prob: 1.0,
+                                                                               self._denoise_keep_prob: 1.0
+                                                                               })
+            self.train_writer.add_summary(reconstruction_summary, self.step)
+        else:
+            reconstruction = self._sess.run((self._layers[-1]),
+                                            feed_dict={self._x: input_tensor,
+                                            self._keep_prob: 1.0,
+                                            self._denoise_keep_prob: 1.0
+                                            })
+
         return reconstruction
 
     def get_save_state(self):

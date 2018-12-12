@@ -1,4 +1,5 @@
 import csv
+import os
 import sys
 import itertools
 import math
@@ -14,6 +15,7 @@ from src.analysis.analysis_utils import get_result_file_dict
 from src.analysis.scrape_for_go_id import build_map
 from tqdm import tqdm
 
+coherence_filename = "coherence.csv"
 
 def setup_for_r():
     ro.r('''
@@ -40,7 +42,8 @@ def generate_pairs_map(unit_geneset_map, geneset_id_map):
                                         geneset_id_map[geneset2]))
     return pairs_map
 
-def compute_mean_coherence(unit_geneset_pairs_map):
+def compute_mean_coherence(unit_geneset_map, geneset_id_map):
+    unit_geneset_pairs_map = generate_pairs_map(unit_geneset_map, geneset_id_map)
     coherence = {}
     for unit in tqdm(unit_geneset_pairs_map):
         coherences = []
@@ -54,50 +57,47 @@ def compute_mean_coherence(unit_geneset_pairs_map):
 
         coherence[unit] = np.mean(coherences)
 
+
     return coherence
 
-
-def main(path):
-    biology_filename = path+"biology.txt"
-
-    # This file contains a list of all go terms
-    go_terms_filename = path+"go_terms.txt"
-
-    # This file has term -> goID map
-    term_map_filename = path+"go_term_map.txt"
-
-    coherence, unit_geneset_map = get_coherence(biology_filename, go_terms_filename, term_map_filename, use_web=False)
-
-    # Write coherence to file
-    coherence_list = []
-
-    with open(path+"coherence.csv", 'w') as file:
+def write_coherence_to_file(path, coherence, unit_geneset_map):
+    with open(path+coherence_filename, 'w') as file:
         table = csv.writer(file)
-
         for unit in coherence:
             if not math.isnan(coherence[unit]):
-                print(unit_geneset_map[unit])
-                print('Coherence {}'.format(coherence[unit]))
-                coherence_list.append(coherence[unit])
                 table.writerow((unit, coherence[unit], len(unit_geneset_map[unit]), unit_geneset_map[unit]))
 
-    print('Coherence mean:{}'.format(np.mean(coherence_list)))
-    print('Coherence stdv:{}'.format(np.std(coherence_list)))
-    print('Coherence totl:{}'.format(len(coherence_list)))
+def load_coherence_file(path):
+    coherence_file = path+coherence_filename
+    coherence = {}
 
+    with open(coherence_file, 'r') as file:
+        reader = csv.reader(file)
+        for line in reader:
+            unit = int(line[0])
+            value = float(line[1])
+            coherence[unit]=value
 
-def get_coherence(biology_filename, go_terms_filename, term_map_filename, use_web=False):
-    term_id_map = build_map(go_terms_filename, term_map_filename, use_web)
+    return coherence
 
+def get_coherence(path, use_web=False):
+
+    go_terms_filename = path+"go_terms.txt"
+    term_map_filename = path+"go_term_map.txt"
+    biology_filename = path+"biology.txt"
     unit_geneset_map = get_result_file_dict(biology_filename)
-
     unit_geneset_map = remove_non_GO_terms(unit_geneset_map)
 
-    pairs_map = generate_pairs_map(unit_geneset_map, term_id_map)
-    setup_for_r()
-    coherence = compute_mean_coherence(pairs_map)
-    return coherence, unit_geneset_map
+    if os.path.isfile(path+coherence_filename):
+        coherence = load_coherence_file(path)
+    else:
+        term_id_map = build_map(go_terms_filename, term_map_filename, use_web)
+        setup_for_r()
+        coherence = compute_mean_coherence(unit_geneset_map, term_id_map)
+        # Write coherence to file
+        write_coherence_to_file(path, coherence, unit_geneset_map)
 
+    return coherence, unit_geneset_map
 
 def remove_non_GO_terms(unit_geneset_map):
     for unit in unit_geneset_map:
@@ -108,13 +108,27 @@ def remove_non_GO_terms(unit_geneset_map):
         unit_geneset_map[unit] = geneset_list
     return unit_geneset_map
 
+def main(path):
+
+    coherence, unit_geneset_map = get_coherence(path, use_web=False)
+
+    coherence_list = []
+    for unit in coherence:
+        if not math.isnan(coherence[unit]):
+            print(unit_geneset_map[unit])
+            print('Coherence {}'.format(coherence[unit]))
+            coherence_list.append(coherence[unit])
+
+    print('Coherence mean:{}'.format(np.mean(coherence_list)))
+    print('Coherence stdv:{}'.format(np.std(coherence_list)))
+    print('Number of Coherence values:{}'.format(len(coherence_list)))
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         path = sys.argv[1]
     else:
         path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\full_data_try4_best2\\"
-        path = "/mnt/c/Users/pulin/Projects/self-taught/results/full_data_try4_best2/"
+        path = "/mnt/c/Users/pulin/Projects/self-taught/results/full_data_try4_best/"
 
     main(path)
 

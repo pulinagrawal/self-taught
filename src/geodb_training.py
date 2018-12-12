@@ -19,18 +19,18 @@ def get_gsm_list(filename):
 if __name__ == '__main__':
 
     stacked = False
-    normed_split_path = os.path.join('data', 'scaled_shftd_split_')
+    normed_split_path = os.path.join('..', 'data', 'normd_split_')
     parser = argparse.ArgumentParser(description='run on hyperparameters')
-    parser.add_argument('--nHidden', type=int, help='number of units in hidden layer')
-    parser.add_argument('--learning_rate', type=float, help='learning rate for unsupervised step')
-    parser.add_argument('--sparsity', type=float, help='sparsity of the hidden layer')
-    parser.add_argument('--beta', type=float, help='value of beta to control the weight of sparsity constraint in loss')
+    parser.add_argument('--nHidden', type=int, default=500, help='number of units in hidden layer')
+    parser.add_argument('--learning_rate', type=float, default=0.0001, help='learning rate for unsupervised step')
+    parser.add_argument('--sparsity', type=float, default=0.02, help='sparsity of the hidden layer')
+    parser.add_argument('--beta', type=float, default=1, help='value of beta to control the weight of sparsity constraint in loss')
     parser.add_argument('--keep_prob', type=float, default=1, help='probability to keep a hidden unit during training (implements dropout)')
     parser.add_argument('--denoise_keep_prob', type=float, default=1, help='probability to keep a input during training (possibly implements denoising)')
     parser.add_argument('--lambda_', type=float, default=0, help='multiplier for weight decay parameter')
     parser.add_argument('--momentum', type=float, default=0.9, help='gradient descent momentum')
     parser.add_argument('--multiplier', type=float, default=10, help='gradient descent momentum')
-    parser.add_argument('--split', type=int, help='the data split index to use')
+    parser.add_argument('--split', type=int, default=1, help='the data split index to use')
     args = parser.parse_args()
     
     #unlabelled, labelled, validation, test = create_datasets(os.path.join(os.pardir, 'data', 'final_transp_directpkl.pkl'))
