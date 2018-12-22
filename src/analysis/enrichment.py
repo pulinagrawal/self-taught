@@ -1,11 +1,12 @@
 from src.utils.stats import hypgeom_mean, hypgeom_var, hypgeom_pmf
 from src.utils import stats, reverse_dict_of_lists
 from collections import defaultdict
+from collections import namedtuple
 from collections import Counter
 from functools import partial
 from bisect import bisect
 from src.analysis.analysis_utils import setup_analysis, build_genesetlist_from_units, get_activations
-from src.analysis.analysis_utils import get_delta_activations, get_activations
+from src.analysis.analysis_utils import get_delta_activations, get_activations, get_input
 import numpy as np
 import os
 import tqdm
@@ -38,30 +39,44 @@ def get_activated_genesets(gsm, geneset_unit_map, model, datasets, for_top_x_pct
         # added one to unit number because biology_results file assume units start with 1
     else:
         top_units = np.random.randint(0, model.encoding_size, size=n_units_selected)
-        # added one to unit number because biology_results file assume units start with 1
 
+    # added one to unit number because biology_results file assume units start with 1
     top_units = [unit + 1 for unit in top_units]
     geneset_list = build_genesetlist_from_units(top_units, geneset_unit_map, disp, bio_result_file)
 
     return list(set(geneset_list))
 
 
-def get_ggec(gsm_list, geneset_unit_map, model, datasets, for_top_x_pct_units):
+def get_ggec(gsm_list, geneset_unit_map, model, datasets,
+             for_top_x_pct_units):
     ggec = Counter()
-    for gsm in gsm_list:
-        ggec += Counter(get_activated_genesets(gsm, geneset_unit_map, model, datasets, for_top_x_pct_units))
+    if isinstance(gsm_list, tuple):
+        input_sum1 = np.mean([np.array(get_input(gsm, datasets)) for gsm in gsm_list[0]], axis=0)
+        input_sum2 = np.mean([np.array(get_input(gsm, datasets)) for gsm in gsm_list[1]], axis=0)
+        model_input = abs(input_sum1-input_sum2)
+        ggec += Counter(get_activated_genesets(model_input, geneset_unit_map, model, datasets, for_top_x_pct_units))
+    else:
+        for gsm in gsm_list:
+            ggec += Counter(get_activated_genesets(gsm, geneset_unit_map, model, datasets, for_top_x_pct_units))
     return ggec
 
 
-def get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_top_x_pct_units, hypgeoK_geneset_map, tests=30):
+def get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_top_x_pct_units,
+                            hypgeoK_geneset_map, tests=30):
     empty_list = partial(list, [0] * tests)
     random_test_dict = defaultdict(empty_list)
     _ = datasets[0].next_batch(datasets[0].num_examples)
     for i in tqdm.tqdm(range(tests)):
-       _, random_gsm_list = datasets[0].next_batch(gsm_count)
-       ggec = get_ggec(random_gsm_list, geneset_unit_map, model, datasets, for_top_x_pct_units)
-       for geneset in ggec:
-           random_test_dict[geneset][i] = ggec[geneset]
+        if isinstance(gsm_count, tuple):
+           _, random_gsm_list1 = datasets[0].next_batch(gsm_count[0])
+           _, random_gsm_list2 = datasets[0].next_batch(gsm_count[1])
+           random_gsm_list = (random_gsm_list1, random_gsm_list2)
+        else:
+            _, random_gsm_list = datasets[0].next_batch(gsm_count)
+
+        ggec = get_ggec(random_gsm_list, geneset_unit_map, model, datasets, for_top_x_pct_units)
+        for geneset in ggec:
+            random_test_dict[geneset][i] = ggec[geneset]
 
     montcarl_pvalue = []
     unit_geneset_map = reverse_dict_of_lists(geneset_unit_map)
@@ -77,6 +92,8 @@ def get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_to
         plt.show()
         '''
         K = hypgeoK_geneset_map[geneset]
+        if isinstance(gsm_count, tuple):
+            gsm_count=1
         theoretical_mean = gsm_count * hypgeom_mean(n, K, N)  # len(gsm_list) for sum of hypgeom
         theoretical_var = gsm_count * hypgeom_var(n, K, N)
         random_comp_dict[geneset]["emp_mean"] = np.mean(random_test_dict[geneset])
@@ -103,6 +120,43 @@ def get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_to
 
     return montcarl_pvalue, random_comp_dict
 
+def enrichment_set_diff(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datasets, display_units_for_gsms=False,
+                   bio_result_file=''):
+    unit_geneset_map = reverse_dict_of_lists(geneset_unit_map)
+    hypgeoK_geneset_map = {geneset: len(unit_geneset_map[geneset]) for geneset in unit_geneset_map}
+    n = for_top_x_pct_units * model.encoding_size
+    N = model.encoding_size
+
+    print('Running Monte Carlo Simulation with binomial theoretical')
+    montecarlo_pvalues, random_dict = get_monte_carlo_pvalues(len(gsm_list), geneset_unit_map, model, datasets, for_top_x_pct_units,
+                                                              hypgeoK_geneset_map, tests=100)
+
+    ggec = get_ggec(gsm_list, geneset_unit_map, model, datasets, for_top_x_pct_units)
+
+    comparision_dict = defaultdict(dict)
+
+    # get the GGEC for each geneset from the counter
+    for geneset, freq in ggec.items():
+        comparision_dict[geneset]['ggec'] = freq
+        K = hypgeoK_geneset_map[geneset]
+        binom_p = hypgeom_pmf(1, n, K, N)
+        theoretical_mean = len(gsm_list) * binom_p # len(gsm_list) for sum of hypgeom
+        theoretical_var = len(gsm_list) * (1-binom_p) * binom_p
+
+        pvalue = stats.emp_p_value(comparision_dict[geneset]['ggec'], random_dict[geneset]["emp_mean"], random_dict[geneset]["emp_std"])
+        comparision_dict[geneset]['th_avg_gec'] = theoretical_mean
+        comparision_dict[geneset]['th_std_gec'] = theoretical_var ** 0.5
+        comparision_dict[geneset]['emp_avg_gec'] = random_dict[geneset]['emp_mean']
+        comparision_dict[geneset]['emp_std_gec'] = random_dict[geneset]['emp_std']
+        comparision_dict[geneset]['obs_pvalue'] = pvalue
+
+    print("Computing FDR scores")
+    for geneset in tqdm.tqdm(comparision_dict):
+        count = bisect(montecarlo_pvalues, comparision_dict[geneset]['obs_pvalue'])+1
+        # probability of getting obs_pvalue or smaller
+        comparision_dict[geneset]['fdr'] = count/len(montecarlo_pvalues)
+
+    return comparision_dict
 
 def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datasets, display_units_for_gsms=False,
                    bio_result_file=''):
@@ -112,7 +166,12 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
     N = model.encoding_size
 
     print('Running Monte Carlo Simulation with binomial theoretical')
-    montecarlo_pvalues, random_dict = get_monte_carlo_pvalues(len(gsm_list), geneset_unit_map, model, datasets, for_top_x_pct_units,
+    if isinstance(gsm_list, tuple):
+        gsm_count = (len(gsm_list[0]), len(gsm_list[1]))
+    else:
+        gsm_count = len(gsm_list)
+
+    montecarlo_pvalues, random_dict = get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_top_x_pct_units,
                                                 hypgeoK_geneset_map, tests=100)
 
     ggec = get_ggec(gsm_list, geneset_unit_map, model, datasets, for_top_x_pct_units)
@@ -256,7 +315,12 @@ def main():
     model_folder = os.path.join('results', 'best_attmpt_2')
 
     labelled_data_files = ['GSE8671_case.txt', 'GSE8671_control.txt', 'GSE8671_series_matrix.txt']
-    comparision = [labelled_data_files[0],
+    set_diff = namedtuple('set_diff', 'file0 file1 set_')
+    comparision = [set_diff(file0=labelled_data_files[0],
+                            file1=labelled_data_files[1],
+                            #underscore for differentiating between delta tuples
+                            set_='_'),
+                   labelled_data_files[0],
                    labelled_data_files[1],
                    labelled_data_files[2],
                    (labelled_data_files[0],labelled_data_files[1])
@@ -272,8 +336,10 @@ def main():
                                                                 model_name, result_filename, split)
 
     for i, file in enumerate(comparision):
-        if isinstance(file, tuple):
+        if isinstance(file, tuple) and not isinstance(file, set_diff):
             gsm_labels[file] = list(zip(gsm_labels[file[0]],gsm_labels[file[1]]))
+        elif isinstance(file, set_diff):
+            gsm_labels[file] = (gsm_labels[file[0]], gsm_labels[file[1]])
 
     sets = {}
 
@@ -294,7 +360,15 @@ def main():
 
     with open(os.path.join(model_folder,'comparison.csv'), 'w') as datafile:
         writer = csv.writer(datafile, delimiter=';')
-        writer.writerow(["Geneset Name", *[file[0]+'-'+file[1] if isinstance(file, tuple) else file for file in sets]])
+        header=["Geneset Name"]
+        for file in sets:
+            if isinstance(file, tuple) and not isinstance(file, set_diff):
+                header.append(file[0]+'-'+file[1])
+            elif isinstance(file, set_diff):
+                header.append('{{{0}}}-{{{1}}}'.format(file[0], file[1]))
+            else:
+                header.append(file)
+        writer.writerow(header)
         for geneset in set_data:
             writer.writerow([geneset, *set_data[geneset]])
 

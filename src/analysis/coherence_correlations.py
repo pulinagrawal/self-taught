@@ -116,7 +116,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         path = sys.argv[1]
     else:
-        path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\full_data_try4_best\\"
-        path = "/mnt/c/Users/pulin/Projects/self-taught/results/full_data_try4_best2/"
+        path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\best_attmpt_2\\"
+        path = "/mnt/c/Users/pulin/Projects/self-taught/results/best_attmpt_2/"
 
     main(path)

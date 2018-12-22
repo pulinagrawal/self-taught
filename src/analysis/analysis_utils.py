@@ -22,13 +22,17 @@ def get_delta_activations(gsms, datasets, model):
     input_genes0 = get_input(gsms[0], datasets)
     input_genes1 = get_input(gsms[1], datasets)
     if input_genes0 is not None and input_genes1 is not None:
-        delta_input = input_genes0-input_genes1
+        delta_input = abs(input_genes0-input_genes1)
         model_input = np.expand_dims(delta_input, axis=0)
         activations = model.encoding(model_input)[0]
     return activations
 
 def get_activations(gsm, datasets, model):
-    input_genes = get_input(gsm, datasets)
+    if isinstance(gsm, str):
+        input_genes = get_input(gsm, datasets)
+    else:
+        input_genes = gsm
+
     if input_genes is not None:
         model_input = np.expand_dims(input_genes, axis=0)
         activations = model.encoding(model_input)[0]
