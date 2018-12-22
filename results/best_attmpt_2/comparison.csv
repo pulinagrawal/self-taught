@@ -1,4 +1,4 @@
-Geneset Name,{GSE8671_case.txt}-{GSE8671_control.txt},GSE8671_case.txt,GSE8671_case.txt-GSE8671_control.txt,GSE8671_series_matrix.txt,GSE8671_control.txt
+Geneset Name,{case}-{control},case,case-control,series,control
 EGFR_UP.V1_DN,0,0,1,0,0
 GNF2_CCNA2,1,0,1,0,0
 GRAHAM_CML_DIVIDING_VS_NORMAL_QUIESCENT_UP,1,0,1,0,0
