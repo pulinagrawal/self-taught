@@ -316,10 +316,11 @@ def main():
 
     labelled_data_files = ['GSE8671_case.txt', 'GSE8671_control.txt', 'GSE8671_series_matrix.txt']
     set_diff = namedtuple('set_diff', 'file0 file1 set_')
-    comparision = [set_diff(file0=labelled_data_files[0],
-                            file1=labelled_data_files[1],
-                            #underscore for differentiating between delta tuples
-                            set_='_'),
+    comparision = [
+                  # set_diff(file0=labelled_data_files[0],
+                  #          file1=labelled_data_files[1],
+                  #          #underscore for differentiating between delta tuples
+                  #          set_='_'),
                    labelled_data_files[0],
                    labelled_data_files[1],
                    labelled_data_files[2],
@@ -379,7 +380,7 @@ def main():
     meta["separator"]=","
     meta["skip"]=0
     meta["meta"]=[{"type":"id", "index":0, "name": "Geneset Name"}]
-    meta["sets"]=[{"format":"binary", "start":1, "end": len(comparision)+1}]
+    meta["sets"]=[{"format":"binary", "start":1, "end": len(comparision)}]
     meta_json = json.dumps(meta)
 
     with open(os.path.join(model_folder,'comparison.json'), 'w') as jsonfile:

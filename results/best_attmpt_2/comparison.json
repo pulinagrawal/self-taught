@@ -1,9 +1,1 @@
-{
-  "name": "Genset Comparison", 
-  "separator": ",", 
-  "skip": 0, 
-  "sets": [{"start": 1, "end": 6, "format": "binary"}], 
-  "file": "http://raw.githubusercontent.com/pulinagrawal/self-taught/upset/results/best_attmpt_2/comparison.csv", 
-  "meta": [{"name": "Geneset Name", "type": "id", "index": 0}], 
-  "header": 0
-}
+{"sets": [{"format": "binary", "end": 4, "start": 1}], "skip": 0, "meta": [{"type": "id", "index": 0, "name": "Geneset Name"}], "header": 0, "file": "https://raw.githubusercontent.com/pulinagrawal/self-taught/upset/results/best_attmpt_2/comparison.csv", "name": "Genset Comparison", "separator": ","}
