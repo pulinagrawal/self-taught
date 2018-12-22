@@ -359,7 +359,7 @@ def main():
         set_data[geneset] = [ 1 if geneset in sets[file] else 0 for file in sets ]
 
     with open(os.path.join(model_folder,'comparison.csv'), 'w') as datafile:
-        writer = csv.writer(datafile, delimiter=';')
+        writer = csv.writer(datafile, delimiter=',')
         header=["Geneset Name"]
         for file in sets:
             if isinstance(file, tuple) and not isinstance(file, set_diff):
@@ -376,7 +376,7 @@ def main():
     meta["file"]="https://raw.githubusercontent.com/pulinagrawal/self-taught/upset/results/best_attmpt_2/comparison.csv"
     meta["name"]="Genset Comparison"
     meta["header"]=0
-    meta["separator"]=";"
+    meta["separator"]=","
     meta["skip"]=0
     meta["meta"]=[{"type":"id", "index":0, "name": "Geneset Name"}]
     meta["sets"]=[{"format":"binary", "start":1, "end": len(comparision)+1}]
