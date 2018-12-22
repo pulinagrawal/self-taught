@@ -317,10 +317,10 @@ def main():
     labelled_data_files = ['GSE8671_case.txt', 'GSE8671_control.txt', 'GSE8671_series_matrix.txt']
     set_diff = namedtuple('set_diff', 'file0 file1 set_')
     comparision = [
-                  # set_diff(file0=labelled_data_files[0],
-                  #          file1=labelled_data_files[1],
-                  #          #underscore for differentiating between delta tuples
-                  #          set_='_'),
+                   set_diff(file0=labelled_data_files[0],
+                            file1=labelled_data_files[1],
+                            #underscore for differentiating between delta tuples
+                            set_='_'),
                    labelled_data_files[0],
                    labelled_data_files[1],
                    labelled_data_files[2],
@@ -366,7 +366,7 @@ def main():
             if isinstance(file, tuple) and not isinstance(file, set_diff):
                 header.append(file[0]+'-'+file[1])
             elif isinstance(file, set_diff):
-                header.append('{{{0}}}-{{{1}}}'.format(file[0], file[1]))
+                header.append('({0})-({1})'.format(file[0], file[1]))
             else:
                 header.append(file)
         writer.writerow(header)
