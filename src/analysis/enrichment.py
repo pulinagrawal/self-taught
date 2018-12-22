@@ -373,7 +373,7 @@ def main():
             writer.writerow([geneset, *set_data[geneset]])
 
     meta = {}
-    meta["file"]="comparison.csv"
+    meta["file"]="https://raw.githubusercontent.com/pulinagrawal/self-taught/upset/results/best_attmpt_2/comparison.csv"
     meta["name"]="Genset Comparison"
     meta["header"]=0
     meta["separator"]=";"
