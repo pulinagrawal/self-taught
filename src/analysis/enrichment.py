@@ -314,17 +314,28 @@ def main():
     model_name = 'geodb_ae_89.net'
     model_folder = os.path.join('results', 'best_attmpt_2')
 
-    labelled_data_files = ['GSE8671_case.txt', 'GSE8671_control.txt', 'GSE8671_series_matrix.txt']
+    labelled_data_files = ['GSE8671_case.txt',
+                           'GSE8671_control.txt',
+                           'GSE8671_series_matrix.txt',
+                           'GSE8052_asthma_0.txt',
+                           'GSE8052_asthma_1.txt',
+                           'GSE15061_aml.txt',
+                           'GSE15061_mds.txt',
+                           ]
     set_diff = namedtuple('set_diff', 'file0 file1 set_')
     comparision = [
                    set_diff(file0=labelled_data_files[0],
                             file1=labelled_data_files[1],
                             #underscore for differentiating between delta tuples
                             set_='_'),
-                   labelled_data_files[0],
-                   labelled_data_files[1],
-                   labelled_data_files[2],
-                   (labelled_data_files[0],labelled_data_files[1])
+                   set_diff(file0=labelled_data_files[3],
+                            file1=labelled_data_files[4],
+                            #underscore for differentiating between delta tuples
+                            set_='_'),
+                   set_diff(file0=labelled_data_files[5],
+                            file1=labelled_data_files[6],
+                            #underscore for differentiating between delta tuples
+                            set_='_')
                    ]
 
     result_filename = 'best_sparse_biology.txt'
