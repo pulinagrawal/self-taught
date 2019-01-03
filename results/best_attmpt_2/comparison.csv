@@ -1,4 +1,4 @@
-Geneset Name,GSE8671_control.txt,GSE8671_case.txt,(GSE8671_case.txt)-(GSE8671_control.txt),GSE8671_case.txt-GSE8671_control.txt,GSE8671_series_matrix.txt
+Geneset Name,control,case,(case)-(control),case-control,series_matrix
 ODONNELL_TARGETS_OF_MYC_AND_TFRC_DN,0,0,1,1,0
 GRAHAM_NORMAL_QUIESCENT_VS_NORMAL_DIVIDING_DN,0,0,1,1,0
 HALLMARK_G2M_CHECKPOINT,0,0,1,1,0
