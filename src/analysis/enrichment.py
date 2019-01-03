@@ -13,6 +13,9 @@ import tqdm
 import csv
 import json
 
+sort_comp_dict = lambda y, by: sorted(y, key=lambda x: (y[x][by], x))
+set_diff = namedtuple('set_diff', 'file0 file1 set_')
+
 def get_activated_genesets(gsm, geneset_unit_map, model, datasets, for_top_x_pct_units=0.1, random=False, disp=False,
                  bio_result_file=''):
     """Returns a list of genesets with their respective counts of the times
@@ -120,44 +123,6 @@ def get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_to
 
     return montcarl_pvalue, random_comp_dict
 
-def enrichment_set_diff(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datasets, display_units_for_gsms=False,
-                   bio_result_file=''):
-    unit_geneset_map = reverse_dict_of_lists(geneset_unit_map)
-    hypgeoK_geneset_map = {geneset: len(unit_geneset_map[geneset]) for geneset in unit_geneset_map}
-    n = for_top_x_pct_units * model.encoding_size
-    N = model.encoding_size
-
-    print('Running Monte Carlo Simulation with binomial theoretical')
-    montecarlo_pvalues, random_dict = get_monte_carlo_pvalues(len(gsm_list), geneset_unit_map, model, datasets, for_top_x_pct_units,
-                                                              hypgeoK_geneset_map, tests=100)
-
-    ggec = get_ggec(gsm_list, geneset_unit_map, model, datasets, for_top_x_pct_units)
-
-    comparision_dict = defaultdict(dict)
-
-    # get the GGEC for each geneset from the counter
-    for geneset, freq in ggec.items():
-        comparision_dict[geneset]['ggec'] = freq
-        K = hypgeoK_geneset_map[geneset]
-        binom_p = hypgeom_pmf(1, n, K, N)
-        theoretical_mean = len(gsm_list) * binom_p # len(gsm_list) for sum of hypgeom
-        theoretical_var = len(gsm_list) * (1-binom_p) * binom_p
-
-        pvalue = stats.emp_p_value(comparision_dict[geneset]['ggec'], random_dict[geneset]["emp_mean"], random_dict[geneset]["emp_std"])
-        comparision_dict[geneset]['th_avg_gec'] = theoretical_mean
-        comparision_dict[geneset]['th_std_gec'] = theoretical_var ** 0.5
-        comparision_dict[geneset]['emp_avg_gec'] = random_dict[geneset]['emp_mean']
-        comparision_dict[geneset]['emp_std_gec'] = random_dict[geneset]['emp_std']
-        comparision_dict[geneset]['obs_pvalue'] = pvalue
-
-    print("Computing FDR scores")
-    for geneset in tqdm.tqdm(comparision_dict):
-        count = bisect(montecarlo_pvalues, comparision_dict[geneset]['obs_pvalue'])+1
-        # probability of getting obs_pvalue or smaller
-        comparision_dict[geneset]['fdr'] = count/len(montecarlo_pvalues)
-
-    return comparision_dict
-
 def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datasets, display_units_for_gsms=False,
                    bio_result_file=''):
     unit_geneset_map = reverse_dict_of_lists(geneset_unit_map)
@@ -166,8 +131,12 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
     N = model.encoding_size
 
     print('Running Monte Carlo Simulation with binomial theoretical')
+    # if gsm list is tuple
+    # means set_diff approach
     if isinstance(gsm_list, tuple):
         gsm_count = (len(gsm_list[0]), len(gsm_list[1]))
+    # else delta dataset and regular gsm set
+    # both need the number of inputs made into model
     else:
         gsm_count = len(gsm_list)
 
@@ -298,7 +267,6 @@ def count_greater(arr, k):
             i += 1
     return i
 
-sort_comp_dict = lambda y, by: sorted(y, key=lambda x: (y[x][by], x))
 
 def print_comp_dict(comparision_dict):
     print()
@@ -309,6 +277,7 @@ def print_comp_dict(comparision_dict):
         pvalue = comparision_dict[item]['obs_pvalue']
         fdr = comparision_dict[item]['fdr']
         print(item, ':', value, '\t', round(mean, 3), '±', round(std, 3), 'p:', pvalue, 'fdr:', fdr)
+
 
 def main():
     model_name = 'geodb_ae_89.net'
@@ -322,20 +291,25 @@ def main():
                            'GSE15061_aml.txt',
                            'GSE15061_mds.txt',
                            ]
-    set_diff = namedtuple('set_diff', 'file0 file1 set_')
     comparision = [
                    set_diff(file0=labelled_data_files[0],
                             file1=labelled_data_files[1],
                             #underscore for differentiating between delta tuples
                             set_='_'),
-                   set_diff(file0=labelled_data_files[3],
-                            file1=labelled_data_files[4],
-                            #underscore for differentiating between delta tuples
-                            set_='_'),
-                   set_diff(file0=labelled_data_files[5],
-                            file1=labelled_data_files[6],
-                            #underscore for differentiating between delta tuples
-                            set_='_')
+        (labelled_data_files[0], labelled_data_files[1]),
+        labelled_data_files[0],
+        labelled_data_files[1],
+        labelled_data_files[2]
+
+                   # set_diff(file0=labelled_data_files[3],
+                   #          file1=labelled_data_files[4],
+                   #          #underscore for differentiating between delta tuples
+                   #          set_='_'),
+                   # set_diff(file0=labelled_data_files[5],
+                   #          file1=labelled_data_files[6],
+                   #          #underscore for differentiating between delta tuples
+                   #          set_='_')
+
                    ]
 
     result_filename = 'best_sparse_biology.txt'
@@ -348,8 +322,12 @@ def main():
                                                                 model_name, result_filename, split)
 
     for i, file in enumerate(comparision):
+        # if comparison element is a simple tuple
+        # assume delta dataset and create list of gsm pairs
         if isinstance(file, tuple) and not isinstance(file, set_diff):
             gsm_labels[file] = list(zip(gsm_labels[file[0]],gsm_labels[file[1]]))
+        # if comparision element is a set_diff
+        # create tuple of lists of gsms
         elif isinstance(file, set_diff):
             gsm_labels[file] = (gsm_labels[file[0]], gsm_labels[file[1]])
 
