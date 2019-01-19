@@ -81,7 +81,6 @@ def get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_to
         for geneset in ggec:
             random_test_dict[geneset][i] = ggec[geneset]
 
-    montcarl_pvalue = []
     unit_geneset_map = reverse_dict_of_lists(geneset_unit_map)
 
     n = for_top_x_pct_units * model.encoding_size
@@ -97,31 +96,22 @@ def get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_to
         K = hypgeoK_geneset_map[geneset]
         if isinstance(gsm_count, tuple):
             gsm_count=1
-        theoretical_mean = gsm_count * hypgeom_mean(n, K, N)  # len(gsm_list) for sum of hypgeom
-        theoretical_var = gsm_count * hypgeom_var(n, K, N)
+        binom_p = hypgeom_pmf(1, n, K, N)
+        theoretical_mean = gsm_count * binom_p # len(gsm_list) for sum of hypgeom
+        theoretical_var = gsm_count * (1-binom_p) * binom_p
+
         random_comp_dict[geneset]["emp_mean"] = np.mean(random_test_dict[geneset])
         random_comp_dict[geneset]["emp_std"] = np.std(random_test_dict[geneset])
 
         random_comp_dict[geneset]["th_mean"] = theoretical_mean
         random_comp_dict[geneset]["th_std"] = theoretical_var ** 0.5
 
-        # get p-value for each geneset for each random test
-        if geneset in random_test_dict:
-            for value in random_test_dict[geneset]:
-                montcarl_pvalue.append(stats.emp_p_value(value, theoretical_mean, theoretical_var ** 0.5))
-        else:
-            # 1 is added to pvalue for better approximation suggested in (North et al, 2002)
-            for _ in range(tests):
-                montcarl_pvalue.append(1.0)
-
     for geneset in random_comp_dict:
         print(geneset)
         print("th:{0}+{1}".format(random_comp_dict[geneset]["th_mean"], random_comp_dict[geneset]["th_std"]))
         print("emp:{0}+{1}".format(random_comp_dict[geneset]["emp_mean"], random_comp_dict[geneset]["emp_std"]))
 
-    montcarl_pvalue.sort()
-
-    return montcarl_pvalue, random_comp_dict
+    return random_comp_dict
 
 def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datasets, display_units_for_gsms=False,
                    bio_result_file=''):
@@ -140,13 +130,14 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
     else:
         gsm_count = len(gsm_list)
 
-    montecarlo_pvalues, random_dict = get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_top_x_pct_units,
+    random_dict = get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_top_x_pct_units,
                                                 hypgeoK_geneset_map, tests=100)
 
     ggec = get_ggec(gsm_list, geneset_unit_map, model, datasets, for_top_x_pct_units)
 
     comparision_dict = defaultdict(dict)
 
+    montecarlo_pvalues = []
     # get the GGEC for each geneset from the counter
     for geneset, freq in ggec.items():
         comparision_dict[geneset]['ggec'] = freq
@@ -161,6 +152,8 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
         comparision_dict[geneset]['emp_avg_gec'] = random_dict[geneset]['emp_mean']
         comparision_dict[geneset]['emp_std_gec'] = random_dict[geneset]['emp_std']
         comparision_dict[geneset]['obs_pvalue'] = pvalue
+        montecarlo_pvalues.append(pvalue)
+
 
     print("Computing FDR scores")
     for geneset in tqdm.tqdm(comparision_dict):
