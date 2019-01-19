@@ -346,7 +346,7 @@ def main():
             else:
                 gsm_count = len(gsm_labels[file])
             count_filter = lambda enriched: set([geneset for geneset in sort_comp_dict(enriched, 'ggec')
-                                                 if enriched[geneset]['ggec'] < gsm_count/2 and enriched[geneset]['fdr'] < 0.05])
+                                                 if enriched[geneset]['ggec'] > gsm_count/2 and enriched[geneset]['fdr'] < 0.05])
             fdr_filter = lambda enriched: set([geneset for geneset in sort_comp_dict(enriched, 'fdr') if enriched[geneset]['fdr'] < 0.05])
             sets[file] = fdr_filter(enriched)
             print('After fdr filter')
