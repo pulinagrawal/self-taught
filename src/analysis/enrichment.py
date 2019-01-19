@@ -296,7 +296,8 @@ def main():
                             file1=labelled_data_files[1],
                             #underscore for differentiating between delta tuples
                             set_='_'),
-        (labelled_data_files[0], labelled_data_files[1]),
+        # normal tuple for delta_datasets
+         (labelled_data_files[0], labelled_data_files[1]),
         labelled_data_files[0],
         labelled_data_files[1],
         labelled_data_files[2]
@@ -315,11 +316,10 @@ def main():
     result_filename = 'best_sparse_biology.txt'
     normed_split_path = os.path.join('data', 'normd_split_')
     split = 1
-    for_top_x_pct_units = 0.02
-
 
     dataset, geneset_unit_map, gsm_labels, model = setup_analysis(labelled_data_files, model_folder, normed_split_path,
                                                                 model_name, result_filename, split)
+    for_top_x_pct_units=model.rho
 
     for i, file in enumerate(comparision):
         # if comparison element is a simple tuple
@@ -338,9 +338,22 @@ def main():
                                                 geneset_unit_map,
                                                 for_top_x_pct_units, dataset)
             print(str(file)+" genesets")
-            fdr_filter = lambda enriched: set([geneset for geneset in sort_comp_dict(enriched, 'fdr') if enriched[geneset]['fdr'] < 0.05])
             print_comp_dict(enriched)
+            if isinstance(file, set_diff):
+                gsm_count = 1
+            elif isinstance(file, tuple):
+                gsm_count = len(gsm_labels[file[0]])
+            else:
+                gsm_count = len(gsm_labels[file])
+            count_filter = lambda enriched: set([geneset for geneset in sort_comp_dict(enriched, 'ggec')
+                                                 if enriched[geneset]['ggec'] < gsm_count/2 and enriched[geneset]['fdr'] < 0.05])
+            fdr_filter = lambda enriched: set([geneset for geneset in sort_comp_dict(enriched, 'fdr') if enriched[geneset]['fdr'] < 0.05])
             sets[file] = fdr_filter(enriched)
+            print('After fdr filter')
+            print(sets[file])
+            sets[file] = count_filter(enriched)
+            print('After count filter')
+            print(sets[file])
             print("")
 
     all=set.union(*sets.values())
