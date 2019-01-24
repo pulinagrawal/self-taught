@@ -27,6 +27,7 @@ def plot_genes(input_genes1, input_genes2=None, title=''):
         plt.subplot(212)
         img = plt.imshow(input_genes2)
     plt.show()
+
     return fig
 
 if __name__ == '__main__':

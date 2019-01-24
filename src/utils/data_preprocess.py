@@ -132,6 +132,12 @@ def quantile_norm(X):
 
 
 def controlled_dropna(df):
+    """ This will remove Nans from a Dataframe intelligently.
+    It will remove the entries from rows or columns depending on
+    which one removes less amount of data.
+    :param df: a dataframe with data.
+    :return:
+    """
     data_size_before = df.shape[0]*df.shape[1]
     dft = df.dropna(axis=1)
     data_size_after = dft.shape[0]*dft.shape[1]
