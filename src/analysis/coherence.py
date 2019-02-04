@@ -36,10 +36,13 @@ def generate_pairs_map(unit_geneset_map, geneset_id_map):
     for unit in tqdm(unit_geneset_map):
         genesets = unit_geneset_map[unit]
         pairs_map[unit] = []
-        for geneset1, geneset2 in itertools.combinations(genesets, 2):
-            if geneset1 in geneset_id_map and geneset2 in geneset_id_map:
-                pairs_map[unit].append((geneset_id_map[geneset1],
-                                        geneset_id_map[geneset2]))
+        if len(genesets)>1:
+            for geneset1, geneset2 in itertools.combinations(genesets, 2):
+                if geneset1 in geneset_id_map and geneset2 in geneset_id_map:
+                    pairs_map[unit].append((geneset_id_map[geneset1],
+                                            geneset_id_map[geneset2]))
+        elif len(genesets)==1:
+            pairs_map[unit]=[(genesets[0],)]
     return pairs_map
 
 def compute_mean_coherence(unit_geneset_map, geneset_id_map):
@@ -48,12 +51,15 @@ def compute_mean_coherence(unit_geneset_map, geneset_id_map):
     for unit in tqdm(unit_geneset_pairs_map):
         coherences = []
         for pair in unit_geneset_pairs_map[unit]:
-            try:
-                coher = r_go_sim(pair[0], pair[1])
-                print(r_go_sim.cache_info())
-                coherences.append(coher)
-            except rpy2.rinterface.RRuntimeError:
-                pass
+            if len(pair)>1:
+                try:
+                    coher = r_go_sim(pair[0], pair[1])
+                    print(r_go_sim.cache_info())
+                    coherences.append(coher)
+                except rpy2.rinterface.RRuntimeError:
+                    pass
+            else:
+                coherences.append(1.0)
 
         coherence[unit] = np.mean(coherences)
 
@@ -127,8 +133,8 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         path = sys.argv[1]
     else:
-        path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\best_attmpt_2\\"
-        path = "/mnt/c/Users/pulin/Projects/self-taught/results/best_attmpt_2/"
+        path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\models\\L1000_scaled_best_3\\"
+        path = "/mnt/c/Users/pulin/Projects/self-taught/results/models/L1000_scaled_best_3/"
 
     main(path)
 

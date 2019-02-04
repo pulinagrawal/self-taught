@@ -65,7 +65,7 @@ def get_ggec(gsm_list, geneset_unit_map, model, datasets,
 
 
 def get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_top_x_pct_units,
-                            hypgeoK_geneset_map, tests=30):
+                            hypgeoK_geneset_map, tests):
     empty_list = partial(list, [0] * tests)
     random_test_dict = defaultdict(empty_list)
     _ = datasets[0].next_batch(datasets[0].num_examples)
@@ -100,16 +100,22 @@ def get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_to
         theoretical_mean = gsm_count * binom_p # len(gsm_list) for sum of hypgeom
         theoretical_var = gsm_count * (1-binom_p) * binom_p
 
-        random_comp_dict[geneset]["emp_mean"] = np.mean(random_test_dict[geneset])
-        random_comp_dict[geneset]["emp_std"] = np.std(random_test_dict[geneset])
+        random_comp_dict[geneset]["emp_mean"] = np.mean(random_test_dict[geneset]) \
+                                                if geneset in random_test_dict \
+                                                else 0
+        random_comp_dict[geneset]["emp_std"] = np.std(random_test_dict[geneset]) \
+                                               if geneset in random_test_dict \
+                                               else 0
 
         random_comp_dict[geneset]["th_mean"] = theoretical_mean
         random_comp_dict[geneset]["th_std"] = theoretical_var ** 0.5
 
     for geneset in random_comp_dict:
         print(geneset)
-        print("th:{0}+{1}".format(random_comp_dict[geneset]["th_mean"], random_comp_dict[geneset]["th_std"]))
-        print("emp:{0}+{1}".format(random_comp_dict[geneset]["emp_mean"], random_comp_dict[geneset]["emp_std"]))
+        print("th:{0}+{1}".format(random_comp_dict[geneset]["th_mean"],
+                                  random_comp_dict[geneset]["th_std"]))
+        print("emp:{0}+{1}".format(random_comp_dict[geneset]["emp_mean"],
+                                   random_comp_dict[geneset]["emp_std"]))
 
     return random_comp_dict
 
@@ -131,7 +137,7 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
         gsm_count = len(gsm_list)
 
     random_dict = get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_top_x_pct_units,
-                                                hypgeoK_geneset_map, tests=100)
+                                                hypgeoK_geneset_map, tests=1000)
 
     ggec = get_ggec(gsm_list, geneset_unit_map, model, datasets, for_top_x_pct_units)
 
@@ -139,7 +145,8 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
 
     montecarlo_pvalues = []
     # get the GGEC for each geneset from the counter
-    for geneset, freq in ggec.items():
+    for geneset in unit_geneset_map:
+        freq = ggec[geneset] if geneset in ggec else 0
         comparision_dict[geneset]['ggec'] = freq
         K = hypgeoK_geneset_map[geneset]
         binom_p = hypgeom_pmf(1, n, K, N)
@@ -153,6 +160,7 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
         comparision_dict[geneset]['emp_std_gec'] = random_dict[geneset]['emp_std']
         comparision_dict[geneset]['obs_pvalue'] = pvalue
         montecarlo_pvalues.append(pvalue)
+        #get pvalues from all the genesets that show up in the network. Not just the ones enriched in the gsm set.:w
 
 
     print("Computing FDR scores")
@@ -273,8 +281,12 @@ def print_comp_dict(comparision_dict):
 
 
 def main():
-    model_name = 'geodb_ae_89.net'
-    model_folder = os.path.join('results', 'best_attmpt_2')
+    model_folder = os.path.join('results', 'models', 'L1000_scaled_best_3')
+
+    result_filename = 'biology.txt'
+    model_name = 'model.net'
+    normed_split_path = os.path.join('data','L1000_data','scaled', 'split_')
+    split = 1
 
     labelled_data_files = ['GSE8671_case.txt',
                            'GSE8671_control.txt',
@@ -284,34 +296,27 @@ def main():
                            'GSE15061_aml.txt',
                            'GSE15061_mds.txt',
                            ]
+
+    dataset, geneset_unit_map, gsm_labels, model = setup_analysis(labelled_data_files, model_folder,
+                                                                  normed_split_path,
+                                                                  model_name, result_filename, split)
     comparision = [
                    set_diff(file0=labelled_data_files[0],
                             file1=labelled_data_files[1],
                             #underscore for differentiating between delta tuples
                             set_='_'),
-        # normal tuple for delta_datasets
-         (labelled_data_files[0], labelled_data_files[1]),
-        labelled_data_files[0],
-        labelled_data_files[1],
-        labelled_data_files[2]
-
-                   # set_diff(file0=labelled_data_files[3],
-                   #          file1=labelled_data_files[4],
-                   #          #underscore for differentiating between delta tuples
-                   #          set_='_'),
-                   # set_diff(file0=labelled_data_files[5],
-                   #          file1=labelled_data_files[6],
-                   #          #underscore for differentiating between delta tuples
-                   #          set_='_')
-
+                   # normal tuple for delta_datasets
+                   (labelled_data_files[0], labelled_data_files[1]),
+                   labelled_data_files[0],
+                   labelled_data_files[1],
+                   labelled_data_files[2]
                    ]
 
-    result_filename = 'best_sparse_biology.txt'
-    normed_split_path = os.path.join('data', 'normd_split_')
-    split = 1
-
-    dataset, geneset_unit_map, gsm_labels, model = setup_analysis(labelled_data_files, model_folder, normed_split_path,
-                                                                model_name, result_filename, split)
+    """
+    comparision = [ labelled_data_files[5],
+                    labelled_data_files[6]
+                    ]
+    """
     for_top_x_pct_units=model.rho
 
     for i, file in enumerate(comparision):

@@ -320,11 +320,13 @@ class Autoencoder(object):
                                                                })
 
     def loss(self, input_tensor):
-        return self._sess.run((self.cost, self.reconstruction_loss), feed_dict={self._x: input_tensor,
+        output = self._sess.run((self.cost, self.reconstruction_loss, self._layers[-1]), feed_dict={self._x: input_tensor,
                                                                                 self._keep_prob: 1.0,
                                                                                 self._denoise_keep_prob: 1.0
                                                                                 })
-
+        print(input_tensor, 'input')
+        print(output[2], 'output')
+        return (output[0], output[1])
     def reconstruction_loss(self, input_tensor):
         loss = self._sess.run((self.reconstruction_loss,), feed_dict={self._x: input_tensor,
                                                                       self._keep_prob: 1.0,

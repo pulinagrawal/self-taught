@@ -158,7 +158,7 @@ def preprocess(filename):
     df = controlled_dropna(df)
 
     # apply quantile normalization
-    if df.columns[0][0:3] != 'GSM':
+    if not (isinstance(df.columns[0], str) and df.columns[0][0:3] == 'GSM'):
         df = df.transpose()
     df_mat = df.as_matrix()
     df_mat = quantile_norm(df_mat)
@@ -198,7 +198,7 @@ if __name__ == '__main__':
             iter_csv = pd.read_csv(filename, sep='\t', index_col=0, chunksize=20000)
             df = pd.concat([chunk for chunk in iter_csv])
         else:
-            filename = os.path.join(os.path.pardir, os.path.pardir, 'data', 'final_transp_directpkl.pkl')
+            filename = os.path.join(os.0path.pardir, os.path.pardir, 'data', 'final_transp_directpkl.pkl')
             df = pkl.load(open(filename, 'rb'))
 
         df = df.dropna(axis=0)
