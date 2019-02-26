@@ -25,7 +25,6 @@ def setup_for_r():
             d <- godata("org.Hs.eg.db", ont="BP", computeIC=TRUE)
     ''')
 
-@lru_cache(maxsize=7000)
 def r_go_sim(goid1, goid2):
     go_sim_call = 'goSim("{0}", "{1}", d, measure="Rel")'.format(goid1, goid2)
     result = ro.r(go_sim_call)
@@ -47,6 +46,33 @@ def generate_pairs_map(unit_geneset_map, geneset_id_map):
 
 def compute_mean_coherence(unit_geneset_map, geneset_id_map):
     unit_geneset_pairs_map = generate_pairs_map(unit_geneset_map, geneset_id_map)
+    flat_pairs={}
+    for unit in tqdm(unit_geneset_pairs_map):
+        for pair in unit_geneset_pairs_map[unit]:
+            flat_pairs[pair]=0
+    for pair in tqdm(flat_pairs):
+        if len(pair)>1:
+            try:
+                coher = r_go_sim(pair[0], pair[1])
+                flat_pairs[pair]=coher
+            except rpy2.rinterface.RRuntimeError:
+                pass
+        else:
+            flat_pairs[pair]=1.0
+
+    coherence = {}
+    for unit in tqdm(unit_geneset_pairs_map):
+        coherences = []
+        for pair in unit_geneset_pairs_map[unit]:
+            coherences.append(flat_pairs[pair])
+
+        coherence[unit] = np.mean(coherences)
+
+    return coherence
+
+'''
+def compute_mean_coherence(unit_geneset_map, geneset_id_map):
+    unit_geneset_pairs_map = generate_pairs_map(unit_geneset_map, geneset_id_map)
     coherence = {}
     for unit in tqdm(unit_geneset_pairs_map):
         coherences = []
@@ -65,6 +91,7 @@ def compute_mean_coherence(unit_geneset_map, geneset_id_map):
 
 
     return coherence
+'''
 
 def write_coherence_to_file(path, coherence, unit_geneset_map):
     with open(path+coherence_filename, 'w') as file:
@@ -133,8 +160,8 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         path = sys.argv[1]
     else:
-        path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\models\\L1000_scaled_best_3\\"
-        path = "/mnt/c/Users/pulin/Projects/self-taught/results/models/L1000_scaled_best_3/"
+        path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\models\\full_data_scaled_best\\"
+        path = "/mnt/c/Users/pulin/Projects/self-taught/results/models/full_data_scaled_best/"
 
     main(path)
 

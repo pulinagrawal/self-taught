@@ -311,12 +311,11 @@ def main():
                    labelled_data_files[1],
                    labelled_data_files[2]
                    ]
-
-    """
+    '''
     comparision = [ labelled_data_files[5],
                     labelled_data_files[6]
                     ]
-    """
+    '''
     for_top_x_pct_units=model.rho
 
     for i, file in enumerate(comparision):
