@@ -302,15 +302,10 @@ def main():
                                                                   normed_split_path,
                                                                   model_name, result_filename, split)
     comparision = [
-                   set_diff(file0=labelled_data_files[0],
-                            file1=labelled_data_files[1],
-                            #underscore for differentiating between delta tuples
-                            set_='_'),
                    # normal tuple for delta_datasets
-                   (labelled_data_files[0], labelled_data_files[1]),
-                   labelled_data_files[0],
-                   labelled_data_files[1],
-                   labelled_data_files[2]
+                   (labelled_data_files[3], labelled_data_files[4]),
+                   labelled_data_files[3],
+                   labelled_data_files[4]
                    ]
     '''
     comparision = [ labelled_data_files[5],
@@ -363,7 +358,7 @@ def main():
         set_data[geneset] = [ 1 if geneset in sets[file].keys() else 0 for file in sets ]
         fdr_data[geneset] = [ sets[file][geneset] if geneset in sets[file].keys() else 'x' for file in sets ]
 
-    with open(os.path.join(model_folder,'comparison.csv'), 'w') as datafile:
+    with open(os.path.join(model_folder,'comparison'+comparision[-1]+'_'+comparision[-2]+'.csv'), 'w') as datafile:
         writer = csv.writer(datafile, delimiter=',')
         header=["Geneset Name"]
         for file in sets:
