@@ -164,8 +164,9 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
 
 
     print("Computing FDR scores")
+    montecarlo_pvalues = sorted(montecarlo_pvalues)
     for geneset in tqdm.tqdm(comparision_dict):
-        count = bisect(montecarlo_pvalues, comparision_dict[geneset]['obs_pvalue'])+1
+        count = bisect(montecarlo_pvalues, comparision_dict[geneset]['obs_pvalue'])
         # probability of getting obs_pvalue or smaller
         comparision_dict[geneset]['fdr'] = count/len(montecarlo_pvalues)
 
@@ -342,9 +343,9 @@ def main():
                 gsm_count = len(gsm_labels[file[0]])
             else:
                 gsm_count = len(gsm_labels[file])
-            count_filter = lambda enriched: set([geneset for geneset in sort_comp_dict(enriched, 'ggec')
+            fdr_filter = lambda enriched: dict([(geneset,enriched[geneset]['fdr']) for geneset in sort_comp_dict(enriched, 'fdr') if enriched[geneset]['fdr'] < 0.05])
+            count_filter = lambda enriched: dict([(geneset,enriched[geneset]['fdr']) for geneset in sort_comp_dict(enriched, 'ggec')
                                                  if enriched[geneset]['ggec'] > gsm_count/2 and enriched[geneset]['fdr'] < 0.05])
-            fdr_filter = lambda enriched: set([geneset for geneset in sort_comp_dict(enriched, 'fdr') if enriched[geneset]['fdr'] < 0.05])
             sets[file] = fdr_filter(enriched)
             print('After fdr filter')
             print(sets[file])
@@ -352,25 +353,34 @@ def main():
             print('After count filter')
             print(sets[file])
             print("")
-
-    all=set.union(*sets.values())
+    all = []
+    for file in sets:
+        all.extend(sets[file].keys())
+    all = set(all)
     set_data = {}
+    fdr_data = {}
     for geneset in all:
-        set_data[geneset] = [ 1 if geneset in sets[file] else 0 for file in sets ]
+        set_data[geneset] = [ 1 if geneset in sets[file].keys() else 0 for file in sets ]
+        fdr_data[geneset] = [ sets[file][geneset] if geneset in sets[file].keys() else 'x' for file in sets ]
 
     with open(os.path.join(model_folder,'comparison.csv'), 'w') as datafile:
         writer = csv.writer(datafile, delimiter=',')
         header=["Geneset Name"]
         for file in sets:
             if isinstance(file, tuple) and not isinstance(file, set_diff):
-                header.append(file[0]+'-'+file[1])
+                compare_name = file[0]+'-'+file[1]
             elif isinstance(file, set_diff):
-                header.append('({0})-({1})'.format(file[0], file[1]))
+                compare_name = '({0})-({1})'.format(file[0], file[1])
             else:
-                header.append(file)
+                compare_name = file
+            header.append(compare_name)
+            header.append(compare_name+'_FDR')
         writer.writerow(header)
         for geneset in set_data:
-            writer.writerow([geneset, *set_data[geneset]])
+            rowdat = []
+            for presence, fdr in zip(set_data[geneset],fdr_data[geneset]):
+                rowdat.extend([presence, fdr])
+            writer.writerow([geneset, *rowdat])
 
     meta = {}
     meta["file"]="https://raw.githubusercontent.com/pulinagrawal/self-taught/upset/results/best_attmpt_2/comparison.csv"
