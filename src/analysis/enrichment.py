@@ -289,13 +289,17 @@ def main():
     normed_split_path = os.path.join('data','L1000_data','scaled', 'split_')
     split = 1
 
-    labelled_data_files = ['GSE8671_case.txt',
+    labelled_data_files = [
+                           'GSE8671_case.txt',
                            'GSE8671_control.txt',
                            'GSE8671_series_matrix.txt',
                            'GSE8052_asthma_0.txt',
                            'GSE8052_asthma_1.txt',
                            'GSE15061_aml.txt',
                            'GSE15061_mds.txt',
+                           'GDS4602_3.txt',
+                           'GDS4602_4.txt',
+                           'GDS4602_5.txt',
                            ]
 
     dataset, geneset_unit_map, gsm_labels, model = setup_analysis(labelled_data_files, model_folder,
@@ -303,9 +307,9 @@ def main():
                                                                   model_name, result_filename, split)
     comparision = [
                    # normal tuple for delta_datasets
-                   (labelled_data_files[3], labelled_data_files[4]),
-                   labelled_data_files[3],
-                   labelled_data_files[4]
+                   #(labelled_data_files[5], labelled_data_files[6]),
+                   labelled_data_files[5],
+                   labelled_data_files[6]
                    ]
     '''
     comparision = [ labelled_data_files[5],
