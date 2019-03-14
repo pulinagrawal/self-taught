@@ -160,8 +160,8 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         path = sys.argv[1]
     else:
-        path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\models\\full_data_scaled_best\\"
-        path = "/mnt/c/Users/pulin/Projects/self-taught/results/models/full_data_scaled_best/"
+        path = "C:\\Users\\pulin\\Projects\\self-taught\\results\\models\\third_full_data_scaled_best\\"
+        path = "/mnt/c/Users/pulin/Projects/self-taught/results/models/third_full_data_scaled_best/"
 
     main(path)
 

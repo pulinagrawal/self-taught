@@ -1,4 +1,4 @@
-from src.utils.stats import hypgeom_mean, hypgeom_var, hypgeom_pmf
+from src.utils.stats import hypgeom_mean, hypgeom_var, hypgeom_pmf, fdrcorrection
 from src.utils import stats, reverse_dict_of_lists
 from collections import defaultdict
 from collections import namedtuple
@@ -144,6 +144,7 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
     comparision_dict = defaultdict(dict)
 
     montecarlo_pvalues = []
+    geneset_order = []
     # get the GGEC for each geneset from the counter
     for geneset in unit_geneset_map:
         freq = ggec[geneset] if geneset in ggec else 0
@@ -160,15 +161,15 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
         comparision_dict[geneset]['emp_std_gec'] = random_dict[geneset]['emp_std']
         comparision_dict[geneset]['obs_pvalue'] = pvalue
         montecarlo_pvalues.append(pvalue)
+        geneset_order.append(geneset)
         #get pvalues from all the genesets that show up in the network. Not just the ones enriched in the gsm set.:w
 
 
     print("Computing FDR scores")
-    montecarlo_pvalues = sorted(montecarlo_pvalues)
+    corrected_p_values = fdrcorrection(montecarlo_pvalues)
     for geneset in tqdm.tqdm(comparision_dict):
-        count = bisect(montecarlo_pvalues, comparision_dict[geneset]['obs_pvalue'])
         # probability of getting obs_pvalue or smaller
-        comparision_dict[geneset]['fdr'] = count/len(montecarlo_pvalues)
+        comparision_dict[geneset]['fdr'] = corrected_p_values[1][geneset_order.index(geneset)]
 
     return comparision_dict
 
@@ -308,8 +309,8 @@ def main():
     comparision = [
                    # normal tuple for delta_datasets
                    #(labelled_data_files[5], labelled_data_files[6]),
-                   labelled_data_files[5],
-                   labelled_data_files[6]
+                   labelled_data_files[0],
+                   labelled_data_files[1]
                    ]
     '''
     comparision = [ labelled_data_files[5],
@@ -345,11 +346,12 @@ def main():
             fdr_filter = lambda enriched: dict([(geneset,enriched[geneset]['fdr']) for geneset in sort_comp_dict(enriched, 'fdr') if enriched[geneset]['fdr'] < 0.05])
             count_filter = lambda enriched: dict([(geneset,enriched[geneset]['fdr']) for geneset in sort_comp_dict(enriched, 'ggec')
                                                  if enriched[geneset]['ggec'] > gsm_count/2 and enriched[geneset]['fdr'] < 0.05])
-            sets[file] = fdr_filter(enriched)
-            print('After fdr filter')
-            print(sets[file])
+            print(str(file)+" genesets")
             sets[file] = count_filter(enriched)
             print('After count filter')
+            print(sets[file])
+            sets[file] = fdr_filter(enriched)
+            print('After fdr filter')
             print(sets[file])
             print("")
     all = []
