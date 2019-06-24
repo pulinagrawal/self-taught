@@ -16,8 +16,8 @@ def hypgeom_pmf(k, n, K, N):
     dist = hypergeom(M=N, n=K, N=n)
     return dist.pmf(k)
 
-def emp_p_value(x, m, s):
-    return norm.sf(x, loc=m, scale=s)
+def emp_p_value(x, m, s, distribution=norm):
+    return distribution.sf(x, loc=m, scale=s)
 
 
 def comb(s, n, l):

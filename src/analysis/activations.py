@@ -73,7 +73,7 @@ def get_unit_activation(gsm_list, geneset_unit_map, model, datasets,
     return gsm_encoding
 
 def get_monte_carlo_activation(gsm_count, geneset_unit_map, model, datasets,
-                               tests=1000):
+                               tests=100):
     random_test = np.zeros(shape=(model.encoding_size,tests))
     for_top_x_pct_units=model.rho
     _ = datasets[0].next_batch(datasets[0].num_examples)
@@ -135,33 +135,43 @@ def main():
     '''
     for_top_x_pct_units=model.rho
 
+
     def flattened_active_units(files):
         flat_units=[]
         for file in files:
-            encodings=get_unit_activation(gsm_labels[file],geneset_unit_map,model,dataset,for_top_x_pct_units)
-            print(len(encodings))
-            for gsm in encodings:
-                flat_units.extend(encodings[gsm])
+            flat_units.extend(unit_activations(gsm_labels[file]))
         return flat_units
 
+    def unit_activations(labels):
+        flat_units=[]
+        encodings=get_unit_activation(labels,geneset_unit_map,model,dataset,for_top_x_pct_units)
+        print(len(encodings))
+        for gsm in encodings:
+            flat_units.extend(encodings[gsm])
+        return flat_units
+
+    def group_frequency(labels):
+        n_units = model.encoding_size
+        flat_units = unit_activations(labels)
+        freq = np.zeros((n_units,))
+        for unit in flat_units:
+            freq[unit-1] += 1
+        return freq
+
+
+
     def plot_files_encoding(files):
-        n_units = 2000
+        n_units = model.encoding_size
         titles=['GSE8671 Control', 'GSE8671 Case']
         import matplotlib.pyplot as plt
-        flat_units = flattened_active_units([files[0]])
-        control_freq = np.zeros((n_units,))
-        for unit in flat_units:
-            control_freq[unit-1] += 1
+        control_freq = group_frequency(gsm_labels[files[0]])
         plt.figure(1)
         plt.title('GSE8671')
         plt.subplot(211)
         plt.ylabel('Frequency of Activation')
         plt.bar(range(n_units),control_freq, label='Control')
 
-        flat_units = flattened_active_units([files[1]])
-        case_freq = np.zeros((n_units,))
-        for unit in flat_units:
-            case_freq[unit-1] += 1
+        case_freq = group_frequency(gsm_labels[files[1]])
         plt.subplot(212)
         plt.bar(range(n_units),case_freq, label='Control')
         plt.legend(labels=['Control', 'Case'])
@@ -179,9 +189,11 @@ def main():
 
         p_values = [0]*n_units
         for row in zip(range(2000), test_stats1, test_stats2):
-            mean = np.mean(row[1]-row[2])
-            std = np.std(row[1]-row[2])
-            value = case_freq[row[0]]-control_freq[row[0]]
+            test1_values = row[1]+1
+            test2_values = row[2]+1
+            mean = np.mean(test2_values/test1_values)
+            std = np.std(test2_values/test1_values)
+            value = (case_freq[row[0]]+1)/(control_freq[row[0]]+1)
             p_value = emp_p_value(value, mean, std)
 
             unit_stats[row[0]] = {'mean': mean,
@@ -194,14 +206,25 @@ def main():
             unit_stats[unit]['fdr']=corrected_p_values[1][unit]
 
         print('Gene sets in enriched units')
-        genesets = []
+        genesets = {}
         unit_count = 0
         for unit in unit_stats:
             if unit_stats[unit]['fdr']<0.05:
                 unit_count+=1
-                genesets.extend(geneset_unit_map[unit])
+                genesets[unit]={'fdr': unit_stats[unit]['fdr'],
+                                'genesets': geneset_unit_map[unit]
+                                }
 
-        for geneset in genesets:
+        all_genesets = []
+        print("")
+        for unit in sorted(genesets, key=lambda x: genesets[x]['fdr']):
+            if len(genesets[unit]['genesets'])>0:
+                print(unit, genesets[unit]['fdr'])
+                print(genesets[unit]['genesets'])
+                all_genesets.extend(genesets[unit]['genesets'])
+            print("")
+
+        for geneset in all_genesets:
             print(geneset)
 
         print('Enriched units ', unit_count)

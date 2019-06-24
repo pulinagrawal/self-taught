@@ -137,7 +137,7 @@ def enrichment_ref(gsm_list, model, geneset_unit_map, for_top_x_pct_units, datas
         gsm_count = len(gsm_list)
 
     random_dict = get_monte_carlo_pvalues(gsm_count, geneset_unit_map, model, datasets, for_top_x_pct_units,
-                                                hypgeoK_geneset_map, tests=1000)
+                                                hypgeoK_geneset_map, tests=100)
 
     ggec = get_ggec(gsm_list, geneset_unit_map, model, datasets, for_top_x_pct_units)
 
@@ -309,8 +309,8 @@ def main():
     comparision = [
                    # normal tuple for delta_datasets
                    #(labelled_data_files[5], labelled_data_files[6]),
-                   labelled_data_files[0],
-                   labelled_data_files[1]
+                   labelled_data_files[5],
+                   labelled_data_files[6]
                    ]
     '''
     comparision = [ labelled_data_files[5],
@@ -355,6 +355,12 @@ def main():
             print(sets[file])
             print("")
     all = []
+    for file in sets:
+        print()
+        print(file)
+        for geneset in sets[file]:
+            print(geneset)
+
     for file in sets:
         all.extend(sets[file].keys())
     all = set(all)
