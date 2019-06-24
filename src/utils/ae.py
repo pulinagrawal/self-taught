@@ -15,7 +15,7 @@ class Autoencoder(object):
                  sparse=True, sparsity=0.1, transfer_fct=tf.nn.sigmoid, beta=3, step=0,
                  reconstruction_batch_size=100, lambda_=0, tied_weights=True,
                  keep_prob=0.5, denoise_keep_prob=0.9, dynamic_learning_rate=False,
-                 momentum=0.8, tf_multiplier=10, zero_noise=True, logdir='summary'):
+                 momentum=0.8, tf_multiplier=10, zero_noise=True, logdir='summary', summary_image=False):
         """Initializes a Autoencoder network with network architecture provided in the form of list of
         hidden units from the input layer to the encoding layer. """
         self._network_architecture = network_architecture
@@ -42,6 +42,7 @@ class Autoencoder(object):
 
         self.graph = tf.Graph()
         self.summaries = {}
+        self.summary_image=summary_image
         with self.graph.as_default():
             # TODO: Serialization maybe possible if the session object is instantiated later.
             # tf Graph input
@@ -69,16 +70,17 @@ class Autoencoder(object):
                     [self.summaries['cost'], self.summaries['latent_loss'], self.summaries['beta'],
                      self.summaries['learning_rate']])
 
-            with tf.name_scope(self._name + '/reconstruction/'):
-                output_image = self.reshape_tensor_for_display(self._layers[-1], recon_batch_size)
-                input_image = self.reshape_tensor_for_display(self._x, recon_batch_size)
-                self.summaries['reconstructed_image'] = tf.summary.image('reconstructed_images', output_image)
-                self.summaries['input_image'] = tf.summary.image('input_images', input_image)
-                self.summary_feature_images()
-                self.image_summaries = tf.summary.merge([self.summaries['reconstructed_image'],
-                                                         self.summaries['input_image'],
-                                                         self.summaries['feature_images']
-                                                         ])
+            if self.summary_image:
+                with tf.name_scope(self._name + '/reconstruction/'):
+                    output_image = self.reshape_tensor_for_display(self._layers[-1], recon_batch_size)
+                    input_image = self.reshape_tensor_for_display(self._x, recon_batch_size)
+                    self.summaries['reconstructed_image'] = tf.summary.image('reconstructed_images', output_image)
+                    self.summaries['input_image'] = tf.summary.image('input_images', input_image)
+                    self.summary_feature_images()
+                    self.image_summaries = tf.summary.merge([self.summaries['reconstructed_image'],
+                                                             self.summaries['input_image'],
+                                                             self.summaries['feature_images']
+                                                             ])
         self.start_session()
 
     def reshape_tensor_for_display(self, tensor, batch_size='default'):
@@ -192,21 +194,14 @@ class Autoencoder(object):
         else:
             noise = tf.random_uniform(tf.shape(prev_layer_output), maxval=1)
             prev_layer_output = tf.where(noise < self._denoise_keep_prob, prev_layer_output, tf.zeros(tf.shape(prev_layer_output), dtype=tf.float32))
+
         # prev_layer_output = tf.Print(prev_layer_output, [prev_layer_output, tf.shape(prev_layer_output), 'input'])
         layers = [dict(zip(['weights', 'biases'], _layer))
                   for _layer in zip(self._network_weights, self._network_biases)]
         for i, layer in enumerate(layers):
             with tf.name_scope(self._name + '/hidden{0}/'.format(i)):
-                if i == len(self._network_architecture) - 2:
-                    current_layer = self._transfer_fct(
-                        (tf.matmul(prev_layer_output, layer['weights']) + layer['biases']) * self.multiplier,
-                        name='units')
-                else:
-                    current_layer = tf.nn.relu6(
-                        (tf.matmul(prev_layer_output, layer['weights']) + layer['biases']) * 6,
-                        name='units')/6
-
-                    # current_layer = tf.Print(current_layer, [current_layer, tf.shape(current_layer), 'current_layer'])
+                current_layer = self._transfer_fct((tf.matmul(prev_layer_output, layer['weights'])+layer['biases'])*self.multiplier, name='units')
+                #current_layer = tf.Print(current_layer, [current_layer, tf.shape(current_layer), 'current_layer'])
             self._layers.append(current_layer)
             if i == len(self._network_architecture) - 2:
                 print("i = ", i, "encoding layer = ", current_layer)
@@ -271,8 +266,7 @@ class Autoencoder(object):
             self.weight_loss = tf.add(weight_loss, 0, name='weight_loss')
             # self.weight_loss = tf.Print(self.weight_loss, [self.weight_loss , 'weight_loss '])
 
-            self.cost = tf.add(tf.add(self.reconstruction_loss, (self.lambda_ / 2) * self.weight_loss),
-                               self.beta * self.latent_loss, name='cost')  # average over batch
+            self.cost = tf.add(tf.add(self.reconstruction_loss, (self.lambda_/2)*self.weight_loss), self.beta*self.latent_loss, name='cost')   # average over batch
             # self.cost = self.reconstruction_loss
             self.summaries['cost'] = tf.summary.scalar('cost', self.cost)
             self.summaries['latent_loss'] = tf.summary.scalar('latent_loss', self.latent_loss)
@@ -326,11 +320,13 @@ class Autoencoder(object):
                                                                })
 
     def loss(self, input_tensor):
-        return self._sess.run((self.cost, self.reconstruction_loss), feed_dict={self._x: input_tensor,
+        output = self._sess.run((self.cost, self.reconstruction_loss, self._layers[-1]), feed_dict={self._x: input_tensor,
                                                                                 self._keep_prob: 1.0,
                                                                                 self._denoise_keep_prob: 1.0
                                                                                 })
-
+        print(input_tensor, 'input')
+        print(output[2], 'output')
+        return (output[0], output[1])
     def reconstruction_loss(self, input_tensor):
         loss = self._sess.run((self.reconstruction_loss,), feed_dict={self._x: input_tensor,
                                                                       self._keep_prob: 1.0,
@@ -340,12 +336,20 @@ class Autoencoder(object):
 
     def reconstruct(self, input_tensor):
         """ Use Autoencoder to reconstruct given data. """
-        reconstruction, reconstruction_summary = self._sess.run((self._layers[-1], self.image_summaries),
-                                                                feed_dict={self._x: input_tensor,
-                                                                           self._keep_prob: 1.0,
-                                                                           self._denoise_keep_prob: 1.0
-                                                                           })
-        self.train_writer.add_summary(reconstruction_summary, self.step)
+        if self.summary_image:
+            reconstruction, reconstruction_summary = self._sess.run((self._layers[-1], self.image_summaries),
+                                                                    feed_dict={self._x: input_tensor,
+                                                                               self._keep_prob: 1.0,
+                                                                               self._denoise_keep_prob: 1.0
+                                                                               })
+            self.train_writer.add_summary(reconstruction_summary, self.step)
+        else:
+            reconstruction = self._sess.run((self._layers[-1]),
+                                            feed_dict={self._x: input_tensor,
+                                            self._keep_prob: 1.0,
+                                            self._denoise_keep_prob: 1.0
+                                            })
+
         return reconstruction
 
     def get_save_state(self):
@@ -398,6 +402,15 @@ class Autoencoder(object):
         autoenc.setup()
 
         return autoenc
+
+    @classmethod
+    def get_identity_encoder(cls, input_size, name='identity_ae'):
+        feature_network = cls([input_size, input_size], name=name,
+                                         sparse=False, transfer_fct=tf.nn.relu, tf_multiplier=1)
+        feature_network.weights = [np.identity(input_size)]
+        feature_network.biases = [np.zeros(input_size)]
+        feature_network.setup()
+        return feature_network
 
     @property
     def encoding_size(self):

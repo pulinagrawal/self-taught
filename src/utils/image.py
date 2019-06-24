@@ -1,7 +1,7 @@
 import numpy as np
 import pickle as pkl
 import os
-from src.utils import ae
+from utils import ae
 import matplotlib.pyplot as plt
 
 def reshape_for_display(image_pixels):
@@ -27,6 +27,8 @@ def plot_genes(input_genes1, input_genes2=None, title=''):
         plt.subplot(212)
         img = plt.imshow(input_genes2)
     plt.show()
+
+    return fig
 
 if __name__ == '__main__':
 

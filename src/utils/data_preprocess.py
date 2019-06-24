@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import os
 import pickle as pkl
+from src.utils import image as im
 
 
 def rankdata(a, method='average'):
@@ -91,6 +92,7 @@ def rankdata(a, method='average'):
     # average method
     return .5 * (count[dense] + count[dense - 1] + 1)
 
+
 def quantile_norm(X):
     """Normalize the columns of X to each have the same distribution.
 
@@ -128,16 +130,60 @@ def quantile_norm(X):
 
     return(Xn)
 
-def quantile_norm_log(X):
-    logX = np.log(X + 1)
-    logXn = quantile_norm(logX)
-    return logXn
+
+def controlled_dropna(df):
+    """ This will remove Nans from a Dataframe intelligently.
+    It will remove the entries from rows or columns depending on
+    which one removes less amount of data.
+    :param df: a dataframe with data.
+    :return:
+    """
+    data_size_before = df.shape[0]*df.shape[1]
+    dft = df.dropna(axis=1)
+    data_size_after = dft.shape[0]*dft.shape[1]
+    if data_size_after < data_size_before/2:
+        dft = df.dropna(axis=0)
+    return dft
 
 
-def preprocess(geodb_frame):
-    ''' sample as rows and features/genes as columns'''
-    geodb_frame = geodb_frame.dropna(axis=0)
-    
+def preprocess(filename):
+    """ preprocess a pickle generated directly from csv of data extracted using extract-geo-data
+    """
+    df = pkl.load(open(filename, 'rb'))
+
+    # remove extremely high values
+    df = df.mask(df > 1000000, np.nan)
+
+    # check and drop NaNs
+    df = controlled_dropna(df)
+
+    # apply quantile normalization
+    if not (isinstance(df.columns[0], str) and df.columns[0][0:3] == 'GSM'):
+        df = df.transpose()
+    df_mat = df.as_matrix()
+    df_mat = quantile_norm(df_mat)
+    df = pd.DataFrame(df_mat.transpose(), index=df.columns, columns=df.index)
+    df = controlled_dropna(df)
+
+    # plot and save the data
+    output_filename = filename[:-4]+'_preprocessed.pkl'
+    plot_file = output_filename[:-4]+'_plot.svg'
+    fig = im.plot_genes(df.sample(len(df.columns)))
+    fig.savefig(plot_file, format='svg')
+    fig.clear()
+    pkl.dump(df, open(output_filename, 'wb'), protocol=4)
+
+    # scale each sample independently
+    df = df.apply(lambda x: (x-x.min())/x.max(), axis=1)
+
+    # save scaled
+    scaled_filename = output_filename[:-4]+'_scaled.pkl'
+    plot_file = scaled_filename[:-4]+'_plot.svg'
+    fig = im.plot_genes(df.sample(len(df.columns)))
+    fig.savefig(plot_file, format='svg')
+    fig.clear()
+    pkl.dump(df, open(scaled_filename, 'wb'), protocol=4)
+
 
 if __name__ == '__main__':
 
@@ -152,17 +198,25 @@ if __name__ == '__main__':
             iter_csv = pd.read_csv(filename, sep='\t', index_col=0, chunksize=20000)
             df = pd.concat([chunk for chunk in iter_csv])
         else:
-            filename = os.path.join(os.path.pardir, os.path.pardir, 'data', 'final_transp_directpkl.pkl')
+            filename = os.path.join(os.0path.pardir, os.path.pardir, 'data', 'final_transp_directpkl.pkl')
             df = pkl.load(open(filename, 'rb'))
 
         df = df.dropna(axis=0)
         df_mat = df.as_matrix()
         print(df_mat.shape)
         df_mat = quantile_norm(df_mat.transpose())
+        '''
+        df_mean = np.mean(df_mat, axis=1, keepdims=True)
+        df_std = np.std(df_mat, axis=1, keepdims=True)
+        df_mat = df_mat-df_mean
+        df_mat = df_mat/df_std
+        df_min = np.min(df_mat)
+        df_mat = df_mat+abs(df_min)
         df_max = np.max(df_mat)
-        df_mat = df_mat/df_max
+        df_mat = df_mat/df_max'''
         dfn = pd.DataFrame(df_mat.transpose(), index=df.index, columns=df.columns)
         dfn = dfn.dropna(axis=0)
+        im.plot_genes(dfn.sample(1000))
         print(dfn.head())
         print(dfn.shape)
         pkl.dump(dfn, open(normed_path, 'wb'))
